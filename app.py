@@ -4,7 +4,7 @@ import qrcode
 import io
 import base64
 import json
-from flask import Flask, render_template, request, send_file, jsonify, send_from_directory, Response, stream_with_context
+from flask import Flask, render_template, request, send_file, jsonify, send_from_directory, Response, stream_with_context, session, redirect
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import mimetypes
@@ -17,7 +17,26 @@ import shutil
 import zipfile
 from base64 import b64encode, b64decode
 
+# Import auth system
+from auth_system import auth_system, require_login, require_permission
+
+# Import high-speed transfer module
+from high_speed_transfer import HighSpeedTransfer
+
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Secret key for sessions
+
+# Initialize high-speed transfer
+high_speed = None  # Will be initialized after app config
+
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Range')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Expose-Headers', 'Content-Range,Content-Length,Accept-Ranges')
+    return response
 
 # Configuration
 UPLOAD_FOLDER = 'shared_files'
@@ -27,7 +46,7 @@ MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024 * 1024  # 1TB
 CHUNK_SIZE = 8192 * 1024  # 8MB chunks for faster transfer
 BANDWIDTH_LIMIT = None  # None = unlimited, or set bytes per second (e.g., 1024*1024 for 1MB/s)
 ENABLE_COMPRESSION = False  # Enable auto-compression before upload
-ENABLE_AUTH = False  # Set to True to enable basic authentication
+ENABLE_AUTH = True  # Set to True to enable basic authentication
 AUTH_USERNAME = 'admin'  # Change this
 AUTH_PASSWORD = 'password'  # Change this
 ENABLE_SSL = False  # Set to True to enable HTTPS
@@ -45,6 +64,9 @@ os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 # Create upload folder if it doesn't exist
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize high-speed transfer system
+high_speed = HighSpeedTransfer(app, UPLOAD_FOLDER)
 
 # Statistics tracking with thread lock
 stats = {
@@ -153,8 +175,408 @@ def index():
                          total_size=total_size,
                          stats=stats)
 
+@app.route('/login')
+def login_page():
+    """Login/Register page"""
+    return render_template('login.html')
+
+# ==================== AUTHENTICATION ENDPOINTS ====================
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """Register a new user"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    display_name = data.get('display_name', '')
+    role = data.get('role', 'user')  # Default to user role
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    # Only admins can create admin accounts
+    if role == 'admin':
+        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        user_session = auth_system.validate_session(token)
+        if not user_session or not auth_system.has_permission(user_session['username'], 'manage_users'):
+            role = 'user'  # Force to user role if not admin
+    
+    success, message = auth_system.create_user(username, password, role, display_name)
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'error': message}), 400
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Login user"""
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'error': 'Username and password required'}), 400
+    
+    success, token, message = auth_system.authenticate(username, password)
+    if success:
+        user_session = auth_system.validate_session(token)
+        return jsonify({
+            'success': True,
+            'token': token,
+            'user': {
+                'username': user_session['username'],
+                'display_name': user_session['display_name'],
+                'role': user_session['role']
+            }
+        })
+    else:
+        return jsonify({'error': message}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+@require_login
+def logout():
+    """Logout user"""
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    auth_system.logout(token)
+    return jsonify({'success': True})
+
+@app.route('/api/auth/me', methods=['GET'])
+@require_login
+def get_current_user():
+    """Get current user info"""
+    return jsonify({
+        'username': request.current_user['username'],
+        'display_name': request.current_user['display_name'],
+        'role': request.current_user['role']
+    })
+
+@app.route('/api/users', methods=['GET'])
+@require_permission('manage_users')
+def get_users():
+    """Get all users (admin only)"""
+    users = auth_system.get_all_users()
+    return jsonify({'users': users})
+
+# ==================== ADMIN PANEL ROUTES ====================
+
+@app.route('/admin')
+def admin_panel():
+    """Admin panel page (admin only)"""
+    # Check if user is authenticated via session or token
+    token = request.cookies.get('authToken') or request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]
+    
+    user_session = auth_system.validate_session(token)
+    if not user_session:
+        # Redirect to login page
+        return redirect('/')
+    
+    if not auth_system.has_permission(user_session['username'], 'delete_any'):
+        # Redirect to home if not admin
+        return redirect('/')
+    
+    return render_template('admin.html')
+
+@app.route('/settings')
+def settings_page():
+    """Settings page (admin only)"""
+    # Check if user is authenticated via session or token
+    token = request.cookies.get('authToken') or request.headers.get('Authorization')
+    if token and token.startswith('Bearer '):
+        token = token[7:]
+    
+    user_session = auth_system.validate_session(token)
+    if not user_session:
+        # Redirect to login page
+        return redirect('/')
+    
+    if not auth_system.has_permission(user_session['username'], 'delete_any'):
+        # Redirect to home if not admin
+        return redirect('/')
+    
+    return render_template('settings.html')
+
+@app.route('/api/admin/dashboard', methods=['GET'])
+@require_permission('delete_any')
+def admin_dashboard():
+    """Get admin dashboard data"""
+    try:
+        # Get all users
+        users = auth_system.get_all_users()
+        
+        # Get all files
+        files_list = []
+        total_size = 0
+        if os.path.exists(UPLOAD_FOLDER):
+            for filename in os.listdir(UPLOAD_FOLDER):
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                if os.path.isfile(filepath):
+                    file_size = os.path.getsize(filepath)
+                    total_size += file_size
+                    metadata = auth_system.get_file_metadata(filename)
+                    files_list.append({
+                        'name': filename,
+                        'size': file_size,
+                        'owner': metadata.get('owner', 'Unknown') if metadata else 'Unknown',
+                        'uploaded': datetime.fromtimestamp(os.path.getctime(filepath)).isoformat(),
+                        'downloads': metadata.get('download_count', 0) if metadata else 0
+                    })
+        
+        # Get transfer statistics
+        transfer_stats = high_speed.get_stats() if high_speed else {'active_uploads': 0, 'active_downloads': 0}
+        
+        # Get recent activity (last 10 activities from file metadata)
+        recent_activity = []
+        for filename in sorted(os.listdir(UPLOAD_FOLDER) if os.path.exists(UPLOAD_FOLDER) else [], 
+                              key=lambda x: os.path.getctime(os.path.join(UPLOAD_FOLDER, x)), 
+                              reverse=True)[:10]:
+            metadata = auth_system.get_file_metadata(filename)
+            if metadata:
+                recent_activity.append({
+                    'type': 'upload',
+                    'title': f'File uploaded: {filename}',
+                    'user': metadata.get('owner', 'Unknown'),
+                    'details': f'{format_file_size(os.path.getsize(os.path.join(UPLOAD_FOLDER, filename)))}',
+                    'time': datetime.fromtimestamp(os.path.getctime(os.path.join(UPLOAD_FOLDER, filename))).strftime('%I:%M %p')
+                })
+        
+        return jsonify({
+            'stats': {
+                'total_users': len(users),
+                'total_files': len(files_list),
+                'storage_used': total_size,
+                'active_transfers': transfer_stats.get('active_uploads', 0) + transfer_stats.get('active_downloads', 0)
+            },
+            'users': [{
+                'username': user['username'],
+                'role': user['role'],
+                'file_count': len([f for f in files_list if f['owner'] == user['username']]),
+                'last_active': 'Recently'
+            } for user in users],
+            'files': files_list,
+            'recent_activity': recent_activity
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/users/<username>', methods=['DELETE'])
+@require_permission('delete_any')
+def admin_delete_user(username):
+    """Delete a user (admin only)"""
+    if username == request.current_user['username']:
+        return jsonify({'error': 'Cannot delete yourself'}), 400
+    
+    success = auth_system.delete_user(username)
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'User not found'}), 404
+
+@app.route('/api/admin/files/<filename>', methods=['DELETE'])
+@require_permission('delete_any')
+def admin_delete_file(filename):
+    """Delete a file (admin only)"""
+    try:
+        filepath = os.path.join(UPLOAD_FOLDER, secure_filename(filename))
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            # Remove metadata
+            auth_system.delete_file_metadata(filename)
+            return jsonify({'success': True})
+        return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/settings', methods=['GET'])
+@require_permission('delete_any')
+def get_settings():
+    """Get current settings"""
+    settings = {
+        'general': {
+            'appName': 'Circuvent Technologies',
+            'serverPort': 5000,
+            'language': 'en',
+            'timezone': 'UTC',
+            'enableQR': True,
+            'darkMode': False
+        },
+        'security': {
+            'enableAuth': True,
+            'sessionTimeout': 7,
+            'passwordStrength': 'medium',
+            'enable2FA': False,
+            'enableIPWhitelist': False
+        },
+        'storage': {
+            'storageLimit': 10,
+            'maxFileSize': 500,
+            'allowedTypes': '',
+            'autoDelete': False,
+            'enableVersioning': True
+        },
+        'transfer': {
+            'transferProtocol': 'websocket',
+            'chunkSize': 4,
+            'parallelTransfers': 8,
+            'bandwidthLimit': 0,
+            'enableResume': True,
+            'enableCompression': False
+        },
+        'notifications': {
+            'enableNotifications': True,
+            'notifyUpload': True,
+            'notifyDownload': True,
+            'notifyNewUser': True,
+            'notifyDelete': True,
+            'adminEmail': ''
+        },
+        'advanced': {
+            'debugMode': False,
+            'enableCORS': True,
+            'corsOrigins': '*',
+            'enableHTTPS': False
+        }
+    }
+    return jsonify(settings)
+
+@app.route('/api/admin/settings', methods=['POST'])
+@require_permission('delete_any')
+def save_settings():
+    """Save settings"""
+    try:
+        settings = request.get_json()
+        # Here you would save settings to a config file or database
+        # For now, just return success
+        return jsonify({'success': True, 'message': 'Settings saved successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== FILE PERMISSION ENDPOINTS ====================
+
+@app.route('/api/files/<filename>/permissions', methods=['GET'])
+@require_login
+def get_file_permissions(filename):
+    """Get file permissions"""
+    metadata = auth_system.get_file_metadata(filename)
+    if not metadata:
+        return jsonify({'error': 'File not found'}), 404
+    
+    return jsonify({
+        'permission': metadata.get('permission', 'public'),
+        'allowed_users': metadata.get('allowed_users', []),
+        'owner': metadata.get('owner')
+    })
+
+@app.route('/api/files/<filename>/permissions', methods=['PUT'])
+@require_login
+def update_file_permissions(filename):
+    """Update file permissions (owner only)"""
+    data = request.get_json()
+    permission = data.get('permission')
+    allowed_users = data.get('allowed_users', [])
+    
+    metadata = auth_system.get_file_metadata(filename)
+    if not metadata:
+        return jsonify({'error': 'File not found'}), 404
+    
+    # Only owner or admin can change permissions
+    if metadata['owner'] != request.current_user['username'] and not auth_system.has_permission(request.current_user['username'], 'delete_any'):
+        return jsonify({'error': 'Only file owner can change permissions'}), 403
+    
+    if permission not in ['public', 'private', 'restricted']:
+        return jsonify({'error': 'Invalid permission type'}), 400
+    
+    auth_system.update_file_permission(filename, permission, allowed_users)
+    return jsonify({'success': True})
+
+# ==================== DELETE REQUEST ENDPOINTS ====================
+
+@app.route('/api/files/<filename>/delete-request', methods=['POST'])
+@require_login
+def request_file_deletion(filename):
+    """Request file deletion"""
+    data = request.get_json()
+    reason = data.get('reason', '')
+    
+    # Check if user can delete directly
+    if auth_system.can_delete_file(filename, request.current_user['username']):
+        return jsonify({'error': 'You can delete this file directly'}), 400
+    
+    request_id = auth_system.request_delete(filename, request.current_user['username'], reason)
+    return jsonify({'success': True, 'request_id': request_id})
+
+@app.route('/api/delete-requests', methods=['GET'])
+@require_permission('approve_delete')
+def get_delete_requests():
+    """Get all delete requests (admin only)"""
+    status = request.args.get('status', None)
+    requests = auth_system.get_delete_requests(status)
+    return jsonify({'requests': requests})
+
+@app.route('/api/delete-requests/<request_id>/approve', methods=['POST'])
+@require_permission('approve_delete')
+def approve_delete_request(request_id):
+    """Approve delete request (admin only)"""
+    success = auth_system.approve_delete_request(request_id, request.current_user['username'])
+    if success:
+        # Get the request details and delete the file
+        requests = auth_system.get_delete_requests()
+        if request_id in requests:
+            filename = requests[request_id]['filename']
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                auth_system.delete_file_metadata(filename)
+        return jsonify({'success': True})
+    else:
+        return jsonify({'error': 'Request not found'}), 404
+
+@app.route('/api/delete-requests/<request_id>/reject', methods=['POST'])
+@require_permission('approve_delete')
+def reject_delete_request(request_id):
+    """Reject delete request (admin only)"""
+    data = request.get_json()
+    reason = data.get('reason', '')
+    
+    success = auth_system.reject_delete_request(request_id, request.current_user['username'], reason)
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'error': 'Request not found'}), 404
+
+# ==================== COMMENT ENDPOINTS ====================
+
+@app.route('/api/files/<filename>/comments', methods=['GET'])
+@require_login
+def get_file_comments(filename):
+    """Get all comments for a file"""
+    # Check access permission
+    if not auth_system.can_access_file(filename, request.current_user['username']):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    comments = auth_system.get_comments(filename)
+    return jsonify({'comments': comments})
+
+@app.route('/api/files/<filename>/comments', methods=['POST'])
+@require_login
+def add_file_comment(filename):
+    """Add comment to file"""
+    # Check access permission
+    if not auth_system.can_access_file(filename, request.current_user['username']):
+        return jsonify({'error': 'Access denied'}), 403
+    
+    data = request.get_json()
+    comment_text = data.get('comment')
+    mentions = data.get('mentions', [])
+    
+    if not comment_text:
+        return jsonify({'error': 'Comment text required'}), 400
+    
+    comment = auth_system.add_comment(filename, request.current_user['username'], comment_text, mentions)
+    return jsonify({'success': True, 'comment': comment})
+
 @app.route('/upload', methods=['POST'])
-@require_auth
+@require_login
 def upload_file():
     """Handle file upload with chunked streaming, resumable uploads, and optional compression"""
     if 'file' not in request.files:
@@ -168,6 +590,11 @@ def upload_file():
     if file:
         start_time = time.time()
         filename = secure_filename(file.filename)
+        
+        # Get permission from request
+        permission = request.form.get('permission', 'public')
+        allowed_users_str = request.form.get('allowed_users', '')
+        allowed_users = [u.strip() for u in allowed_users_str.split(',') if u.strip()] if allowed_users_str else []
         
         # Check for resume capability
         resume_offset = int(request.headers.get('X-Upload-Offset', 0))
@@ -280,11 +707,28 @@ def upload_file():
         if transfer_id in active_transfers:
             del active_transfers[transfer_id]
         
+        # Add file metadata for auth system
+        auth_system.add_file_metadata(
+            filename,
+            request.current_user['username'],
+            permission,
+            allowed_users
+        )
+        
+        # Update file size and type in metadata
+        metadata = auth_system.get_file_metadata(filename)
+        if metadata:
+            metadata['size'] = total_bytes
+            metadata['type'] = file.content_type or ''
+            auth_system._save_json(auth_system.FILE_METADATA_DB, auth_system.file_metadata)
+        
         file_info = get_file_info(filename)
         file_info['upload_speed'] = format_speed(speed)
         file_info['resumed'] = resume_offset > 0
         file_info['compressed'] = enable_compression and ENABLE_COMPRESSION
         file_info['versioned'] = enable_versioning
+        file_info['owner'] = request.current_user['username']
+        file_info['permission'] = permission
         
         return jsonify({
             'success': True,
@@ -298,12 +742,44 @@ def upload_file():
 
 @app.route('/files')
 def list_files():
-    """List all shared files"""
+    """List all shared files with metadata"""
+    # Get current user if authenticated
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    user_session = auth_system.validate_session(token)
+    current_username = user_session['username'] if user_session else None
+    
     files = []
     for filename in os.listdir(app.config['UPLOAD_FOLDER']):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if os.path.isfile(filepath):
-            files.append(get_file_info(filename))
+            # Check if user can access this file
+            if current_username and not auth_system.can_access_file(filename, current_username):
+                continue  # Skip files user can't access
+            
+            file_info = get_file_info(filename)
+            
+            # Add metadata
+            metadata = auth_system.get_file_metadata(filename)
+            if metadata:
+                file_info['owner'] = metadata.get('owner', 'Unknown')
+                file_info['owner_display'] = metadata.get('owner', 'Unknown')
+                file_info['permission'] = metadata.get('permission', 'public')
+                file_info['created_at'] = metadata.get('created_at', file_info['modified'])
+            else:
+                file_info['owner'] = 'Unknown'
+                file_info['owner_display'] = 'Unknown'
+                file_info['permission'] = 'public'
+                file_info['created_at'] = file_info['modified']
+            
+            # Add delete permission check
+            if current_username:
+                file_info['can_delete'] = auth_system.can_delete_file(filename, current_username)
+                file_info['can_edit_permissions'] = (metadata and metadata.get('owner') == current_username) or auth_system.has_permission(current_username, 'delete_any')
+            else:
+                file_info['can_delete'] = False
+                file_info['can_edit_permissions'] = False
+            
+            files.append(file_info)
     
     # Sort by modified time (newest first)
     files.sort(key=lambda x: x['modified'], reverse=True)
@@ -332,14 +808,23 @@ def download_file(filename):
         return jsonify({'error': str(e)}), 404
 
 @app.route('/delete/<filename>', methods=['DELETE'])
+@require_login
 def delete_file(filename):
-    """Delete a file"""
+    """Delete a file (owner or admin only)"""
     try:
+        # Check if user can delete this file
+        if not auth_system.can_delete_file(filename, request.current_user['username']):
+            return jsonify({'error': 'You do not have permission to delete this file. You can request deletion instead.'}), 403
+        
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if os.path.exists(filepath):
             file_size = os.path.getsize(filepath)
             os.remove(filepath)
             stats['total_size'] -= file_size
+            
+            # Delete metadata
+            auth_system.delete_file_metadata(filename)
+            
             return jsonify({'success': True, 'message': f'File {filename} deleted'})
         return jsonify({'error': 'File not found'}), 404
     except Exception as e:
@@ -357,9 +842,11 @@ def get_stats():
     return jsonify({
         'total_files': total_files,
         'total_size': total_size,
-        'total_uploads': stats['total_uploads'],
-        'total_downloads': stats['total_downloads'],
-        'active_connections': stats['active_connections']
+        'total_uploads': stats.get('total_uploads', 0),
+        'total_downloads': stats.get('total_downloads', 0),
+        'total_resumed': stats.get('total_resumed', 0),
+        'total_compressed': stats.get('total_compressed', 0),
+        'total_versions': stats.get('total_versions', 0)
     })
 
 @app.route('/search')
@@ -491,7 +978,7 @@ def bulk_download():
         memory_file = BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             for filename in filenames:
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
                 if os.path.exists(filepath):
                     zf.write(filepath, filename)
         
@@ -534,11 +1021,23 @@ def file_info_endpoint(filename):
 @app.route('/transfer-status')
 def transfer_status():
     """Get current transfer status"""
+    # Count active transfers by type
+    upload_count = sum(1 for t in active_transfers.values() if t.get('type') == 'upload')
+    download_count = sum(1 for t in active_transfers.values() if t.get('type') == 'download')
+    
+    # Calculate average speeds
+    upload_speeds = [t['speed'] for t in active_transfers.values() if t.get('type') == 'upload' and 'speed' in t]
+    download_speeds = [t['speed'] for t in active_transfers.values() if t.get('type') == 'download' and 'speed' in t]
+    
+    avg_upload_speed = sum(upload_speeds) / len(upload_speeds) if upload_speeds else 0
+    avg_download_speed = sum(download_speeds) / len(download_speeds) if download_speeds else 0
+    
     return jsonify({
-        'active_uploads': len(active_transfers['uploads']),
-        'active_downloads': len(active_transfers['downloads']),
-        'upload_speed': format_speed(stats.get('upload_speed', 0)),
-        'download_speed': format_speed(stats.get('download_speed', 0))
+        'active_uploads': upload_count,
+        'active_downloads': download_count,
+        'upload_speed': format_speed(avg_upload_speed),
+        'download_speed': format_speed(avg_download_speed),
+        'total_active': len(active_transfers)
     })
 
 @app.route('/clear-all', methods=['POST'])
@@ -574,6 +1073,17 @@ def calculate_file_hash(filepath, algorithm='md5'):
         for chunk in iter(lambda: f.read(CHUNK_SIZE), b''):
             hash_obj.update(chunk)
     return hash_obj.hexdigest()
+
+def format_file_size(bytes_size):
+    """Format file size in human-readable format"""
+    if bytes_size < 1024:
+        return f"{bytes_size} B"
+    elif bytes_size < 1024 * 1024:
+        return f"{bytes_size / 1024:.2f} KB"
+    elif bytes_size < 1024 * 1024 * 1024:
+        return f"{bytes_size / (1024 * 1024):.2f} MB"
+    else:
+        return f"{bytes_size / (1024 * 1024 * 1024):.2f} GB"
 
 def format_speed(bytes_per_second):
     """Format transfer speed in human-readable format"""
@@ -707,6 +1217,11 @@ def download_with_progress(filename):
     
     # Support range requests for resume
     range_header = request.headers.get('Range', None)
+    
+    # Validate range header - ignore if it's malformed or 'undefined'
+    if range_header and (range_header == 'undefined' or not range_header.startswith('bytes=')):
+        range_header = None
+    
     file_size = os.path.getsize(filepath)
     
     def generate():
@@ -717,8 +1232,13 @@ def download_with_progress(filename):
         if range_header:
             # Parse range header: bytes=start-end
             byte_range = range_header.replace('bytes=', '').split('-')
-            start = int(byte_range[0]) if byte_range[0] else 0
-            end = int(byte_range[1]) if byte_range[1] else file_size - 1
+            try:
+                start = int(byte_range[0]) if byte_range[0] and byte_range[0] != 'undefined' else 0
+                end = int(byte_range[1]) if byte_range[1] and byte_range[1] != 'undefined' else file_size - 1
+            except ValueError:
+                # If parsing fails, download full file
+                start = 0
+                end = file_size - 1
         
         transfer_id = str(hash(filename + str(time.time())))
         bytes_sent = 0
@@ -813,10 +1333,10 @@ def compress_files():
         download_name='compressed_files.zip'
     )
 
-@app.route('/settings', methods=['GET', 'POST'])
+@app.route('/api/legacy/settings', methods=['GET', 'POST'])
 @require_auth
-def manage_settings():
-    """Get or update server settings"""
+def manage_legacy_settings():
+    """Get or update server settings (legacy endpoint)"""
     global BANDWIDTH_LIMIT, ENABLE_COMPRESSION, ENABLE_AUTH
     
     if request.method == 'GET':
@@ -846,7 +1366,8 @@ if __name__ == '__main__':
     port = 5000
     
     print("\n" + "=" * 60)
-    print("🚀 NetShare Pro v2.0 - Advanced File Sharing Server")
+    print("🚀 Circuvent Technologies - NetShare Pro v2.0")
+    print("   Advanced File Sharing Server")
     print("=" * 60)
     print(f"\n📱 Access from this device: http://localhost:{port}")
     print(f"🌐 Access from network: http://{local_ip}:{port}")
@@ -876,13 +1397,22 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print()
     
-    # Run server with SSL if enabled
+    # Run server with high-speed WebSocket support
+    # Note: use_reloader=False is required to prevent port conflicts with SocketIO
     if ENABLE_SSL and os.path.exists(SSL_CERT_FILE) and os.path.exists(SSL_KEY_FILE):
-        app.run(
+        high_speed.socketio.run(
+            app,
             host='0.0.0.0',
             port=port,
             debug=True,
+            use_reloader=False,  # Disable reloader to prevent port conflicts
             ssl_context=(SSL_CERT_FILE, SSL_KEY_FILE)
         )
     else:
-        app.run(host='0.0.0.0', port=port, debug=True)
+        high_speed.socketio.run(
+            app,
+            host='0.0.0.0',
+            port=port,
+            debug=True,
+            use_reloader=False  # Disable reloader to prevent port conflicts
+        )

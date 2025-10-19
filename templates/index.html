@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetShare Pro - Advanced File Sharing</title>
+    <title>NetShare Pro - Circuvent Technologies</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Socket.IO for high-speed transfer -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
 </head>
 <body>
     <div class="particles" id="particles"></div>
@@ -49,6 +51,11 @@
                     <div class="status-value">Online</div>
                 </div>
             </div>
+            <div class="company-branding">
+                <small style="color: var(--text-secondary); font-size: 0.75rem;">
+                    <i class="fas fa-copyright"></i> Circuvent Technologies
+                </small>
+            </div>
         </div>
     </aside>
 
@@ -72,6 +79,55 @@
                 <button class="icon-btn" id="refreshBtn" title="Refresh">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                
+                <!-- User Profile Dropdown -->
+                <div class="user-profile" id="userProfile" style="display: none;">
+                    <button class="profile-btn" id="profileToggle">
+                        <div class="profile-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="profile-info">
+                            <span class="profile-name" id="profileName">Guest</span>
+                            <span class="profile-role" id="profileRole">Viewer</span>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <div class="dropdown-header">
+                            <div class="dropdown-avatar">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <div>
+                                <div class="dropdown-name" id="dropdownName">Guest</div>
+                                <div class="dropdown-username" id="dropdownUsername">@guest</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item" id="myFilesBtn">
+                            <i class="fas fa-folder"></i>
+                            <span>My Files</span>
+                        </a>
+                        <a href="#" class="dropdown-item" id="settingsBtn">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </a>
+                        <a href="#" class="dropdown-item" id="adminPanelBtn" style="display: none;">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Admin Panel</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item logout-item" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Login Button (shown when not logged in) -->
+                <button class="btn btn-primary" id="loginBtnHeader" onclick="window.location.href='/login'" style="display: none;">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                
                 <div class="connection-status">
                     <span class="status-dot"></span>
                     <span class="status-text">Connected</span>
@@ -434,6 +490,7 @@
         </div>
     </div>
 
+    <script src="{{ url_for('static', filename='highspeed.js') }}"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

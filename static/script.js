@@ -15,12 +15,22 @@ let downloadProgress = {};  // Track download progress
 let resumableUploads = {};  // Track resumable uploads
 let enableCompression = false;  // Compression before upload
 let enableVersioning = false;  // File versioning
+let currentUser = null;  // Current logged-in user
+let authToken = null;  // Authentication token
+let highSpeedTransfer = null;  // High-speed transfer instance
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize high-speed transfer system
+    if (typeof HighSpeedTransfer !== 'undefined') {
+        highSpeedTransfer = new HighSpeedTransfer();
+        console.log('High-speed transfer system initialized');
+    }
+    
     initParticles();
     initSidebar();
     initNavigation();
+    checkAuthStatus();  // Check if user is logged in
     loadFiles();
     setupEventListeners();
     updateStats();
@@ -43,6 +53,99 @@ function initParticles() {
         particle.style.animationDuration = (15 + Math.random() * 10) + 's';
         particlesContainer.appendChild(particle);
     }
+}
+
+// ==================== AUTHENTICATION ====================
+
+// Check authentication status on page load
+async function checkAuthStatus() {
+    authToken = localStorage.getItem('authToken');
+    
+    if (!authToken) {
+        showLoginButton();
+        return;
+    }
+    
+    // Ensure token is also in cookie for server-side access
+    document.cookie = `authToken=${authToken}; path=/; max-age=604800`;
+    
+    try {
+        const response = await fetch('/api/auth/me', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.ok) {
+            currentUser = await response.json();
+            showUserProfile();
+            updateUIForUser();
+        } else {
+            // Token expired or invalid
+            localStorage.removeItem('authToken');
+            document.cookie = 'authToken=; path=/; max-age=0';
+            authToken = null;
+            currentUser = null;
+            showLoginButton();
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        showLoginButton();
+    }
+}
+
+// Show login button
+function showLoginButton() {
+    document.getElementById('userProfile').style.display = 'none';
+    document.getElementById('loginBtnHeader').style.display = 'block';
+}
+
+// Show user profile
+function showUserProfile() {
+    if (!currentUser) return;
+    
+    document.getElementById('userProfile').style.display = 'block';
+    document.getElementById('loginBtnHeader').style.display = 'none';
+    
+    // Update profile display
+    document.getElementById('profileName').textContent = currentUser.display_name || currentUser.username;
+    document.getElementById('profileRole').textContent = currentUser.role;
+    document.getElementById('dropdownName').textContent = currentUser.display_name || currentUser.username;
+    document.getElementById('dropdownUsername').textContent = `@${currentUser.username}`;
+    
+    // Show admin panel for admins
+    if (currentUser.role === 'admin') {
+        document.getElementById('adminPanelBtn').style.display = 'flex';
+    }
+}
+
+// Update UI based on user role
+function updateUIForUser() {
+    // Future: Can hide/show features based on permissions
+}
+
+// Logout function
+async function logout() {
+    try {
+        await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+    
+    // Clear local storage and cookie
+    localStorage.removeItem('authToken');
+    document.cookie = 'authToken=; path=/; max-age=0';
+    authToken = null;
+    currentUser = null;
+    
+    // Redirect to login
+    window.location.href = '/login';
 }
 
 // Initialize sidebar
@@ -114,8 +217,13 @@ function setupEventListeners() {
     const themeToggle = document.getElementById('themeToggle');
     const sortBy = document.getElementById('sortBy');
 
-    // Click to browse
-    dropArea.addEventListener('click', () => fileInput.click());
+    // Click to browse (but not when clicking the label)
+    dropArea.addEventListener('click', (e) => {
+        // Don't trigger if clicking the label or its children
+        if (!e.target.closest('label[for="fileInput"]')) {
+            fileInput.click();
+        }
+    });
 
     // File input change
     fileInput.addEventListener('change', handleFiles);
@@ -162,6 +270,65 @@ function setupEventListeners() {
     themeToggle.addEventListener('click', () => {
         showToast('Theme toggle coming soon!', 'info');
     });
+    
+    // Profile dropdown toggle
+    const profileToggle = document.getElementById('profileToggle');
+    const profileDropdown = document.getElementById('profileDropdown');
+    
+    if (profileToggle) {
+        profileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle('active');
+        });
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (profileDropdown && !e.target.closest('.user-profile')) {
+            profileDropdown.classList.remove('active');
+        }
+    });
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        });
+    }
+    
+    // My Files button
+    const myFilesBtn = document.getElementById('myFilesBtn');
+    if (myFilesBtn) {
+        myFilesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            filterMyFiles();
+            profileDropdown.classList.remove('active');
+        });
+    }
+    
+    // Settings button
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Navigate to settings page
+            window.location.href = '/settings';
+            profileDropdown.classList.remove('active');
+        });
+    }
+    
+    // Admin panel button
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
+    if (adminPanelBtn) {
+        adminPanelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = '/admin';
+        });
+    }
     
     // Sort
     sortBy.addEventListener('change', (e) => {
@@ -236,108 +403,37 @@ function processUploadQueue() {
 }
 
 function uploadFile(file, uploadId, resumeOffset = 0) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('compress', enableCompression);
-    formData.append('version', enableVersioning);
-
+    // Use high-speed WebSocket transfer
     const uploadItem = createUploadItem(file, uploadId);
     document.getElementById('uploadItems').appendChild(uploadItem);
     
     activeUploads.push(uploadId);
-
-    const xhr = new XMLHttpRequest();
-    const startTime = Date.now();
-    let lastLoaded = resumeOffset;
-    let lastTime = startTime;
-
-    // Set resume header if resuming
-    if (resumeOffset > 0) {
-        xhr.setRequestHeader('X-Upload-Offset', resumeOffset);
-    }
-
-    // Upload progress with speed calculation
-    xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-            const percentComplete = ((e.loaded + resumeOffset) / (e.total + resumeOffset)) * 100;
-            const currentTime = Date.now();
-            const timeDiff = (currentTime - lastTime) / 1000; // seconds
-            const bytesDiff = e.loaded - lastLoaded;
-            
-            if (timeDiff > 0) {
-                const speed = bytesDiff / timeDiff;
-                updateUploadProgress(uploadId, percentComplete, speed);
-                lastLoaded = e.loaded;
-                lastTime = currentTime;
-            } else {
-                updateUploadProgress(uploadId, percentComplete, 0);
-            }
-            
-            // Save progress for resume capability
-            resumableUploads[file.name] = {
-                uploadId: uploadId,
-                file: file,
-                bytesUploaded: e.loaded + resumeOffset,
-                totalBytes: e.total + resumeOffset
-            };
+    
+    highSpeedTransfer.uploadFile(file, {
+        onProgress: (data) => {
+            updateUploadProgress(uploadId, data.progress, data.speed_mbps * 1000000 / 8); // Convert Mbps to bytes/sec
         }
-    });
-
-    // Upload complete
-    xhr.addEventListener('load', () => {
-        // Remove from active uploads
+    }).then((result) => {
+        // Upload complete
         activeUploads = activeUploads.filter(id => id !== uploadId);
         
-        if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            const speed = response.speed || 'N/A';
-            const resumedMsg = response.resumed_from ? ' (resumed)' : '';
-            showToast(`${file.name} uploaded at ${speed}${resumedMsg}`, 'success');
-            completeUpload(uploadId);
-            
-            // Clear resume data
-            delete resumableUploads[file.name];
-            
-            setTimeout(() => {
-                uploadItem.remove();
-                loadFiles();
-                updateStats();
-                
-                // Process next file in queue
-                processUploadQueue();
-            }, 1000);
-        } else {
-            const error = JSON.parse(xhr.responseText);
-            showToast(error.error || 'Upload failed', 'error');
-            failUpload(uploadId);
-            activeUploads = activeUploads.filter(id => id !== uploadId);
+        showToast(`${file.name} uploaded at ${result.speed_mbps.toFixed(2)} Mbps`, 'success');
+        completeUpload(uploadId);
+        
+        setTimeout(() => {
+            uploadItem.remove();
+            loadFiles();
+            updateStats();
             processUploadQueue();
-        }
-    });
-
-    // Upload error - enable resume
-    xhr.addEventListener('error', () => {
-        showToast(`Upload interrupted: ${file.name} - Click Resume to continue`, 'warning');
-        failUpload(uploadId, true);  // true = resumable
-        activeUploads = activeUploads.filter(id => id !== uploadId);
+        }, 1000);
         
-        // Add resume button
-        const uploadItem = document.getElementById(`upload-${uploadId}`);
-        if (uploadItem && resumableUploads[file.name]) {
-            const resumeBtn = document.createElement('button');
-            resumeBtn.className = 'btn btn-small btn-primary';
-            resumeBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
-            resumeBtn.onclick = () => {
-                const savedProgress = resumableUploads[file.name];
-                uploadFile(savedProgress.file, savedProgress.uploadId, savedProgress.bytesUploaded);
-                resumeBtn.remove();
-            };
-            uploadItem.querySelector('.upload-item-header').appendChild(resumeBtn);
-        }
+    }).catch((error) => {
+        console.error('Upload error:', error);
+        showToast(`Upload failed: ${file.name}`, 'error');
+        failUpload(uploadId);
+        activeUploads = activeUploads.filter(id => id !== uploadId);
+        processUploadQueue();
     });
-
-    xhr.open('POST', '/upload');
-    xhr.send(formData);
 }
 
 function createUploadItem(file, uploadId) {
@@ -399,7 +495,12 @@ function failUpload(uploadId, resumable = false) {
 // Load files from server
 async function loadFiles() {
     try {
-        const response = await fetch('/files');
+        const headers = {};
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/files', { headers });
         allFiles = await response.json();
         renderFiles();
         loadRecentFiles();
@@ -760,69 +861,103 @@ function downloadFile(filename) {
     showToast(`Downloading ${filename}`, 'success');
 }
 
-// Download file with progress tracking
+// Download file with high-speed WebSocket transfer
 async function downloadFileWithProgress(filename) {
     try {
-        const downloadId = Date.now();
+        const downloadId = `download-${Date.now()}`;
         
         // Create progress indicator
-        showDownloadProgress(filename, downloadId);
+        showDownloadProgress(filename, downloadId, false);
         
-        const response = await fetch(`/download-progress/${encodeURIComponent(filename)}`, {
-            headers: {
-                'Range': downloadProgress[filename] ? `bytes=${downloadProgress[filename]}-` : undefined
+        // Check if high-speed transfer is available
+        if (highSpeedTransfer && highSpeedTransfer.socket && highSpeedTransfer.socket.connected) {
+            // Use high-speed WebSocket transfer
+            const blob = await highSpeedTransfer.downloadFile(filename, {
+                onProgress: (data) => {
+                    updateDownloadProgress(downloadId, data.progress, data.received || 0, data.total || 0, data.speed_mbps * 1000000 / 8);
+                }
+            });
+            
+            // Download complete - trigger browser download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Show completion
+            completeDownload(downloadId);
+            
+            setTimeout(() => {
+                hideDownloadProgress(downloadId);
+            }, 3000);
+            
+            showToast(`✓ ${filename} downloaded successfully`, 'success');
+        } else {
+            // Fallback to regular HTTP download with progress
+            console.log('WebSocket not available, using HTTP download');
+            
+            const response = await fetch(`/download/${encodeURIComponent(filename)}`);
+            if (!response.ok) throw new Error('Download failed');
+            
+            const contentLength = response.headers.get('content-length');
+            const total = parseInt(contentLength, 10);
+            let received = 0;
+            
+            const reader = response.body.getReader();
+            const chunks = [];
+            const startTime = Date.now();
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                
+                if (done) break;
+                
+                chunks.push(value);
+                received += value.length;
+                
+                const percent = (received / total) * 100;
+                const elapsed = (Date.now() - startTime) / 1000;
+                const speed = received / elapsed; // bytes per second
+                
+                updateDownloadProgress(downloadId, percent, received, total, speed);
             }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Download failed');
+            
+            // Create blob and download
+            const blob = new Blob(chunks);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            completeDownload(downloadId);
+            
+            setTimeout(() => {
+                hideDownloadProgress(downloadId);
+            }, 3000);
+            
+            showToast(`✓ ${filename} downloaded successfully`, 'success');
         }
-        
-        const reader = response.body.getReader();
-        const contentLength = +response.headers.get('Content-Length');
-        let receivedLength = downloadProgress[filename] || 0;
-        const chunks = [];
-        
-        while (true) {
-            const {done, value} = await reader.read();
-            
-            if (done) break;
-            
-            chunks.push(value);
-            receivedLength += value.length;
-            
-            // Update progress
-            const percentComplete = (receivedLength / contentLength) * 100;
-            updateDownloadProgress(downloadId, percentComplete, receivedLength, contentLength);
-            
-            // Save progress for resume
-            downloadProgress[filename] = receivedLength;
-        }
-        
-        // Combine chunks
-        const blob = new Blob(chunks);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        // Clear progress
-        delete downloadProgress[filename];
-        hideDownloadProgress(downloadId);
-        showToast(`Downloaded ${filename}`, 'success');
         
     } catch (error) {
         console.error('Download error:', error);
-        showToast(`Download interrupted: ${filename} - Click to resume`, 'warning');
+        showToast(`Download failed: ${filename}`, 'error');
+        if (downloadId) {
+            failDownload(downloadId, filename, false);
+        }
     }
 }
 
-function showDownloadProgress(filename, downloadId) {
+function showDownloadProgress(filename, downloadId, isResume = false) {
     const container = document.getElementById('downloadProgressContainer') || createDownloadProgressContainer();
+    container.style.display = 'block';
     
     const item = document.createElement('div');
     item.className = 'download-progress-item';
@@ -830,31 +965,74 @@ function showDownloadProgress(filename, downloadId) {
     item.innerHTML = `
         <div class="download-header">
             <i class="fas fa-download"></i>
-            <span>${escapeHtml(filename)}</span>
-            <span id="download-percent-${downloadId}">0%</span>
+            <span class="download-filename">${escapeHtml(filename)}</span>
+            <div class="download-actions">
+                <button class="download-pause-btn" onclick="pauseDownload('${downloadId}', '${escapeHtml(filename)}')" title="Pause">
+                    <i class="fas fa-pause"></i>
+                </button>
+                <button class="download-cancel-btn" onclick="cancelDownload('${downloadId}', '${escapeHtml(filename)}')" title="Cancel">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="download-status">
+            ${isResume ? '<span class="resume-badge"><i class="fas fa-play-circle"></i> Resuming...</span>' : 'Preparing...'}
         </div>
         <div class="progress-bar">
             <div class="progress-fill" id="download-progress-${downloadId}" style="width: 0%"></div>
+        </div>
+        <div class="download-details">
+            <span class="download-percentage" id="download-percent-${downloadId}">0%</span>
+            <span class="download-speed" id="download-speed-${downloadId}">--</span>
+            <span class="download-size" id="download-size-${downloadId}">0 / 0</span>
         </div>
     `;
     
     container.appendChild(item);
 }
 
-function updateDownloadProgress(downloadId, percent, received, total) {
+function updateDownloadProgress(downloadId, percent, received, total, speed = 0) {
     const progressFill = document.getElementById(`download-progress-${downloadId}`);
     const percentText = document.getElementById(`download-percent-${downloadId}`);
+    const speedText = document.getElementById(`download-speed-${downloadId}`);
+    const sizeText = document.getElementById(`download-size-${downloadId}`);
+    const item = document.getElementById(`download-${downloadId}`);
     
     if (progressFill && percentText) {
         progressFill.style.width = percent + '%';
-        percentText.textContent = Math.round(percent) + '%';
+        percentText.textContent = percent.toFixed(1) + '%';
+    }
+    
+    if (speedText && speed > 0) {
+        speedText.textContent = formatBytes(speed) + '/s';
+    }
+    
+    if (sizeText) {
+        sizeText.textContent = `${formatBytes(received)} / ${formatBytes(total)}`;
+    }
+    
+    if (item) {
+        const statusEl = item.querySelector('.download-status');
+        if (statusEl) {
+            statusEl.innerHTML = '<span><i class="fas fa-spinner fa-spin"></i> Downloading...</span>';
+        }
     }
 }
 
 function hideDownloadProgress(downloadId) {
     const item = document.getElementById(`download-${downloadId}`);
     if (item) {
-        setTimeout(() => item.remove(), 2000);
+        item.style.opacity = '0';
+        item.style.transition = 'opacity 0.3s';
+        setTimeout(() => {
+            item.remove();
+            
+            // Hide container if empty
+            const container = document.getElementById('downloadProgressContainer');
+            if (container && container.children.length === 0) {
+                container.style.display = 'none';
+            }
+        }, 300);
     }
 }
 
@@ -865,6 +1043,100 @@ function createDownloadProgressContainer() {
     container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: 300px; max-height: 400px; overflow-y: auto; z-index: 1000; padding: 1rem; display: none;';
     document.body.appendChild(container);
     return container;
+}
+
+// Complete download
+function completeDownload(downloadId) {
+    const item = document.getElementById(`download-${downloadId}`);
+    if (!item) return;
+    
+    const progressFill = document.getElementById(`download-progress-${downloadId}`);
+    const statusEl = item.querySelector('.download-status');
+    const actionsEl = item.querySelector('.download-actions');
+    
+    if (progressFill) {
+        progressFill.style.width = '100%';
+        progressFill.style.backgroundColor = '#4CAF50';
+    }
+    if (statusEl) {
+        statusEl.innerHTML = '<span style="color: #4CAF50;"><i class="fas fa-check-circle"></i> Complete</span>';
+    }
+    if (actionsEl) actionsEl.style.display = 'none';
+}
+
+// Mark download as failed with resume option
+function failDownload(downloadId, filename, canResume = true) {
+    const item = document.getElementById(`download-${downloadId}`);
+    if (!item) return;
+    
+    const statusEl = item.querySelector('.download-status');
+    const actionsEl = item.querySelector('.download-actions');
+    
+    if (statusEl) {
+        statusEl.innerHTML = '<span style="color: #ff9800;"><i class="fas fa-exclamation-triangle"></i> Interrupted</span>';
+    }
+    
+    if (actionsEl && canResume) {
+        actionsEl.innerHTML = `
+            <button class="download-resume-btn" onclick="downloadFileWithProgress('${escapeHtml(filename)}')" title="Resume">
+                <i class="fas fa-play"></i> Resume
+            </button>
+            <button class="download-cancel-btn" onclick="cancelDownload('${downloadId}', '${escapeHtml(filename)}')" title="Cancel">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+    }
+}
+
+// Pause download (store progress and abort)
+function pauseDownload(downloadId, filename) {
+    const progress = downloadProgress[filename];
+    if (!progress) return;
+    
+    const item = document.getElementById(`download-${downloadId}`);
+    if (!item) return;
+    
+    const statusEl = item.querySelector('.download-status');
+    const actionsEl = item.querySelector('.download-actions');
+    
+    if (statusEl) {
+        statusEl.innerHTML = '<span style="color: #2196F3;"><i class="fas fa-pause-circle"></i> Paused</span>';
+    }
+    
+    if (actionsEl) {
+        actionsEl.innerHTML = `
+            <button class="download-resume-btn" onclick="downloadFileWithProgress('${escapeHtml(filename)}')" title="Resume">
+                <i class="fas fa-play"></i> Resume
+            </button>
+            <button class="download-cancel-btn" onclick="cancelDownload('${downloadId}', '${escapeHtml(filename)}')" title="Cancel">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+    }
+    
+    showToast('Download paused. Click Resume to continue.', 'info');
+}
+
+// Cancel download (clear all progress)
+function cancelDownload(downloadId, filename) {
+    delete downloadProgress[filename];
+    localStorage.removeItem(`download_${filename}`);
+    hideDownloadProgress(downloadId);
+    showToast('Download cancelled', 'info');
+}
+
+// Format bytes to human-readable size
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    if (!bytes || isNaN(bytes)) return '--';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
 // Folder upload support
@@ -1194,3 +1466,91 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Filter files to show only current user's files
+function filterMyFiles() {
+    if (!currentUser) {
+        showToast('Please login to view your files', 'warning');
+        return;
+    }
+    
+    const myFiles = allFiles.filter(file => file.owner === currentUser.username);
+    
+    if (myFiles.length === 0) {
+        showToast('You haven\'t uploaded any files yet', 'info');
+        return;
+    }
+    
+    // Temporarily render only user's files
+    const filesGrid = document.getElementById('filesGrid');
+    const emptyState = document.getElementById('emptyState');
+    
+    filesGrid.style.display = 'grid';
+    emptyState.style.display = 'none';
+    filesGrid.innerHTML = myFiles.map(file => createFileCard(file)).join('');
+    
+    showToast(`Showing ${myFiles.length} of your files`, 'success');
+    
+    // Switch to files section
+    const filesNavItem = document.querySelector('[data-section="files"]');
+    if (filesNavItem) {
+        filesNavItem.click();
+    }
+}
+
+// Delete a file
+async function deleteFile(filename) {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
+        return;
+    }
+    
+    try {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch(`/delete/${encodeURIComponent(filename)}`, {
+            method: 'DELETE',
+            headers: headers
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showToast(result.message || `Deleted ${filename}`, 'success');
+            loadFiles();
+            updateStats();
+        } else {
+            showToast(result.error || 'Delete failed', 'error');
+        }
+    } catch (error) {
+        console.error('Delete error:', error);
+        showToast('Failed to delete file', 'error');
+    }
+}
+
+// Preview file
+function previewFile(filename) {
+    window.open(`/preview/${encodeURIComponent(filename)}`, '_blank');
+}
+
+// Show file versions
+async function showFileVersions(filename) {
+    try {
+        const response = await fetch(`/file-versions/${encodeURIComponent(filename)}`);
+        const data = await response.json();
+        
+        if (data.versions && data.versions.length > 0) {
+            showToast(`${filename} has ${data.versions.length} previous versions`, 'info');
+        } else {
+            showToast('No previous versions available', 'info');
+        }
+    } catch (error) {
+        console.error('Error fetching versions:', error);
+        showToast('Failed to load versions', 'error');
+    }
+}
