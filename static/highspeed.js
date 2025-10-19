@@ -47,6 +47,13 @@ class HighSpeedTransfer {
                 upload.progress = data.progress;
                 this.updateUploadProgress(upload, data);
                 
+                // Update transfer monitor if available
+                if (typeof updateTransferProgress === 'function' && data.progress !== undefined) {
+                    const elapsed = (Date.now() - upload.start_time) / 1000;
+                    const speedMbps = elapsed > 0 ? (data.received * this.CHUNK_SIZE * 8) / (elapsed * 1000000) : 0;
+                    updateTransferProgress(data.progress, speedMbps);
+                }
+                
                 // Continue sending next chunks
                 this.sendNextChunks(upload);
             }

@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Socket.IO for high-speed transfer -->
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <!-- Chart.js for transfer visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="particles" id="particles"></div>
@@ -73,6 +75,9 @@
             </div>
 
             <div class="header-actions">
+                <button class="icon-btn" onclick="showTextSharingPanel()" title="Share Text">
+                    <i class="fas fa-comment-dots"></i>
+                </button>
                 <button class="icon-btn" id="themeToggle" title="Toggle Theme">
                     <i class="fas fa-moon"></i>
                 </button>
@@ -486,6 +491,122 @@
             </div>
             <div class="preview-content" id="previewContent">
                 <!-- Preview content goes here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Transfer Monitor -->
+    <div class="transfer-monitor" id="transferMonitor" style="display: none;">
+        <div class="transfer-monitor-header">
+            <div class="transfer-monitor-title">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Live Transfer Monitor</span>
+            </div>
+            <div class="transfer-monitor-actions">
+                <button class="btn-icon" onclick="minimizeTransferMonitor()" title="Minimize">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="btn-icon" onclick="closeTransferMonitor()" title="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="transfer-monitor-body" id="transferMonitorBody">
+            <!-- Current Transfer Info -->
+            <div class="current-transfer-info">
+                <div class="transfer-file-name" id="currentTransferFile">
+                    <i class="fas fa-file"></i>
+                    <span>Preparing transfer...</span>
+                </div>
+                <div class="transfer-type-badge" id="currentTransferType">
+                    <i class="fas fa-arrow-up"></i>
+                    <span>Upload</span>
+                </div>
+            </div>
+
+            <!-- Speed Meter -->
+            <div class="speed-meter-container">
+                <div class="speed-display">
+                    <div class="speed-value" id="currentTransferSpeed">0</div>
+                    <div class="speed-unit">Mbps</div>
+                </div>
+                <div class="speed-stats">
+                    <div class="speed-stat">
+                        <span class="stat-label">Progress</span>
+                        <span class="stat-value" id="transferProgressPercent">0%</span>
+                    </div>
+                    <div class="speed-stat">
+                        <span class="stat-label">Transferred</span>
+                        <span class="stat-value" id="transferredSize">0 MB</span>
+                    </div>
+                    <div class="speed-stat">
+                        <span class="stat-label">Time Elapsed</span>
+                        <span class="stat-value" id="transferElapsed">0s</span>
+                    </div>
+                    <div class="speed-stat">
+                        <span class="stat-label">ETA</span>
+                        <span class="stat-value" id="transferETA">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="transfer-progress-container">
+                <div class="transfer-progress-bar">
+                    <div class="transfer-progress-fill" id="transferProgressBar"></div>
+                    <div class="transfer-progress-text" id="transferProgressText">0%</div>
+                </div>
+            </div>
+
+            <!-- Real-time Speed Chart -->
+            <div class="transfer-chart-container">
+                <div class="chart-header">
+                    <h4><i class="fas fa-chart-line"></i> Transfer Speed (Mbps)</h4>
+                    <div class="chart-legend">
+                        <span class="legend-item">
+                            <span class="legend-dot" style="background: linear-gradient(135deg, #667eea, #764ba2);"></span>
+                            Current Speed
+                        </span>
+                        <span class="legend-item">
+                            <span class="legend-dot" style="background: rgba(102, 126, 234, 0.3);"></span>
+                            Average: <span id="averageSpeed">0</span> Mbps
+                        </span>
+                    </div>
+                </div>
+                <canvas id="transferSpeedChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Network Statistics -->
+            <div class="network-stats-grid">
+                <div class="network-stat-card">
+                    <i class="fas fa-rocket"></i>
+                    <div class="network-stat-content">
+                        <span class="network-stat-label">Peak Speed</span>
+                        <span class="network-stat-value" id="peakSpeed">0 Mbps</span>
+                    </div>
+                </div>
+                <div class="network-stat-card">
+                    <i class="fas fa-clock"></i>
+                    <div class="network-stat-content">
+                        <span class="network-stat-label">Avg Speed</span>
+                        <span class="network-stat-value" id="avgSpeedDisplay">0 Mbps</span>
+                    </div>
+                </div>
+                <div class="network-stat-card">
+                    <i class="fas fa-database"></i>
+                    <div class="network-stat-content">
+                        <span class="network-stat-label">Total Size</span>
+                        <span class="network-stat-value" id="totalFileSize">0 MB</span>
+                    </div>
+                </div>
+                <div class="network-stat-card">
+                    <i class="fas fa-network-wired"></i>
+                    <div class="network-stat-content">
+                        <span class="network-stat-label">Protocol</span>
+                        <span class="network-stat-value">WebSocket</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
