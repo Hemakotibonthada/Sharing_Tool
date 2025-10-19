@@ -613,19 +613,24 @@
                     <div class="setting-group">
                         <div class="setting-label">Maximum Storage Limit</div>
                         <div class="setting-hint">Total storage quota for all files (GB)</div>
-                        <input type="number" class="form-control" value="10" id="storageLimit">
+                        <input type="number" class="form-control" value="1024" id="storageLimit" min="1" max="10240" step="1">
                     </div>
 
                     <div class="setting-group">
                         <div class="setting-label">Maximum File Size</div>
-                        <div class="setting-hint">Maximum size for individual file uploads (MB)</div>
+                        <div class="setting-hint">Maximum size for individual file uploads</div>
                         <select class="form-control form-select" id="maxFileSize">
                             <option value="10">10 MB</option>
                             <option value="50">50 MB</option>
                             <option value="100">100 MB</option>
-                            <option value="500" selected>500 MB</option>
+                            <option value="500">500 MB</option>
                             <option value="1024">1 GB</option>
                             <option value="5120">5 GB</option>
+                            <option value="10240">10 GB</option>
+                            <option value="51200">50 GB</option>
+                            <option value="102400">100 GB</option>
+                            <option value="512000">500 GB</option>
+                            <option value="1048576" selected>1 TB</option>
                             <option value="0">Unlimited</option>
                         </select>
                     </div>
