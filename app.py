@@ -16,6 +16,8 @@ import gzip
 import shutil
 import zipfile
 from base64 import b64encode, b64decode
+import subprocess
+import platform
 
 # Import auth system
 from auth_system import auth_system, require_login, require_permission
@@ -1439,6 +1441,61 @@ def manage_legacy_settings():
         ENABLE_COMPRESSION = data['enable_compression']
     
     return jsonify({'success': True, 'message': 'Settings updated'})
+
+# ==================== NETWORK DEVICES ENDPOINT ====================
+
+@app.route('/api/network/devices', methods=['GET'])
+def get_network_devices():
+    """Scan local subnet for active devices (ping sweep)"""
+    import ipaddress
+    import threading
+
+    local_ip = get_local_ip()
+    net = ipaddress.ip_network(local_ip + '/24', strict=False)
+    devices = []
+    threads = []
+    lock = threading.Lock()
+
+    def ping(ip):
+        param = '-n' if platform.system().lower() == 'windows' else '-c'
+        command = ['ping', param, '1', '-w', '500', str(ip)]
+        try:
+            result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode == 0:
+                with lock:
+                    devices.append(str(ip))
+        except Exception:
+            pass
+
+    # Only scan first 50 IPs for speed
+    for ip in list(net.hosts())[:50]:
+        t = threading.Thread(target=ping, args=(ip,))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+
+    return jsonify({'devices': devices, 'local_ip': local_ip})
+
+# ==================== USER ROLE ASSIGNMENT ENDPOINT ====================
+
+@app.route('/api/admin/users/<username>/role', methods=['PUT'])
+@require_login
+def update_user_role(username):
+    """Update a user's role (admin only)"""
+    data = request.get_json()
+    new_role = data.get('role')
+    if new_role not in ['admin', 'user', 'viewer']:
+        return jsonify({'error': 'Invalid role'}), 400
+    # Only admin can change roles
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    user_session = auth_system.validate_session(token)
+    if not user_session or user_session.get('role') != 'admin':
+        return jsonify({'error': 'Permission denied'}), 403
+    if not auth_system.user_exists(username):
+        return jsonify({'error': 'User not found'}), 404
+    auth_system.set_user_role(username, new_role)
+    return jsonify({'success': True, 'role': new_role})
 
 if __name__ == '__main__':
     # Print startup information

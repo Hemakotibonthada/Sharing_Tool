@@ -398,28 +398,24 @@
                                     <span>{{ local_ip }}</span>
                                 </div>
                             </div>
-                            <div class="info-item">
-                                <i class="fas fa-plug"></i>
-                                <div>
-                                    <strong>Port</strong>
-                                    <span>{{ port }}</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
+                    <!-- Device List Card -->
                     <div class="network-card glass-effect">
                         <div class="card-header">
-                            <i class="fas fa-mobile-alt"></i>
-                            <h3>Mobile Access</h3>
+                            <i class="fas fa-network-wired"></i>
+                            <h3>Devices on Network</h3>
                         </div>
-                        <div class="qr-section">
-                            <img src="{{ qr_code }}" alt="QR Code" class="qr-code">
-                            <p class="qr-hint">
-                                <i class="fas fa-qrcode"></i>
-                                Scan with your phone camera
-                            </p>
+                        <div id="deviceList">
+                            <div class="empty-state" id="deviceListEmpty">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Scanning network...</p>
+                            </div>
                         </div>
+                        <button class="btn btn-secondary" onclick="scanDevices()" style="margin-top: 15px;">
+                            <i class="fas fa-sync-alt"></i> Rescan Devices
+                        </button>
                     </div>
                 </div>
 
