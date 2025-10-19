@@ -58,8 +58,8 @@ python app.py
    - Shared files location
 
 3. Access the application:
-   - **On the same computer**: Open `http://localhost:5000`
-   - **On other devices**: Open the network URL shown (e.g., `http://192.168.1.100:5000`)
+   - **On the same computer**: Open `http://localhost:5001`
+   - **On other devices**: Open the network URL shown (e.g., `http://192.168.1.100:5001`)
    - **On mobile**: Scan the QR code displayed on the webpage
 
 ## 📖 Usage
@@ -148,7 +148,7 @@ python app.py
 ### Change Port
 Edit `app.py` and modify the port number:
 ```python
-app.run(host='0.0.0.0', port=5000, debug=True)
+app.run(host='0.0.0.0', port=5001, debug=True)
 ```
 
 ### Change Upload Folder
@@ -227,7 +227,7 @@ The application supports **all file types** up to 1TB, with special features for
 
 ### Can't access from other devices
 - Ensure all devices are on the same WiFi network
-- Check firewall settings (allow Python/port 5000)
+- Check firewall settings (allow Python/port 5001)
 - Verify the IP address is correct
 
 ### Upload fails
@@ -238,7 +238,7 @@ The application supports **all file types** up to 1TB, with special features for
 
 ### Server won't start
 - Verify Python is installed correctly
-- Check if port 5000 is already in use
+- Check if port 5001 is already in use
 - Install required packages: `pip install -r requirements.txt`
 
 ## 📝 License

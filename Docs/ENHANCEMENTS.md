@@ -145,7 +145,7 @@ Werkzeug==3.0.1
 
 ### Network Configuration
 - **Host**: 0.0.0.0 (all interfaces)
-- **Port**: 5000
+- **Port**: 5001
 - **Protocol**: HTTP/1.1
 - **Debug Mode**: Enabled (auto-reload on changes)
 
@@ -260,6 +260,6 @@ Werkzeug==3.0.1
 ---
 
 **Current Status**: ✅ All features implemented and tested
-**Server Running**: http://192.168.1.14:5000
+**Server Running**: http://192.168.1.14:5001
 **Active Users**: Multiple devices on network
 **Performance**: Optimized for maximum transfer speed

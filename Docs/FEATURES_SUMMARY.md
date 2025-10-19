@@ -167,7 +167,7 @@ def admin_panel():
 ### 2. Access Admin Panel
 - Method 1: Click profile dropdown → "Admin Panel"
 - Method 2: Navigate to `/admin` directly
-- Method 3: URL: `http://localhost:5000/admin`
+- Method 3: URL: `http://localhost:5001/admin`
 
 ### 3. View Dashboard
 - See real-time statistics
@@ -227,7 +227,7 @@ The admin panel is now **fully implemented** with:
 
 ### Access URL
 ```
-http://YOUR_IP:5000/admin
+http://YOUR_IP:5001/admin
 ```
 
 **Status**: ✅ **PRODUCTION READY**

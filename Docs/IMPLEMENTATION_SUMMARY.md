@@ -184,7 +184,7 @@ window.location.href = '/login';
 ### Test Steps:
 
 1. **Login Test**
-   - Go to http://localhost:5000/login
+   - Go to http://localhost:5001/login
    - Login with: `admin` / `admin123`
    - Should redirect to main page
    - Profile should appear top-right
@@ -268,8 +268,8 @@ The user will **stay logged in** across browser restarts, page refreshes, and ta
 ## 🎉 Ready to Use!
 
 The server is running at:
-- **Local**: http://localhost:5000
-- **Network**: http://192.168.1.14:5000
+- **Local**: http://localhost:5001
+- **Network**: http://192.168.1.14:5001
 
 **Default Login:**
 - Username: `admin`

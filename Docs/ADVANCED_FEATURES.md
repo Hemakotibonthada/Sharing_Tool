@@ -226,7 +226,7 @@ openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 36
 1. Generate SSL certificates
 2. Update paths in config
 3. Enable SSL
-4. Access via `https://192.168.1.14:5000`
+4. Access via `https://192.168.1.14:5001`
 
 ---
 
@@ -422,8 +422,8 @@ python app.py
 ```
 
 6. **Access**:
-- HTTP: `http://192.168.1.14:5000`
-- HTTPS: `https://192.168.1.14:5000`
+- HTTP: `http://192.168.1.14:5001`
+- HTTPS: `https://192.168.1.14:5001`
 
 ---
 
@@ -462,7 +462,7 @@ python app.py
 9. ✅ HTTPS support with SSL
 10. ✅ Bandwidth limiting controls
 
-**Server Status**: ✅ Running on http://192.168.1.14:5000
+**Server Status**: ✅ Running on http://192.168.1.14:5001
 **All Features**: ✅ Implemented and Ready
 **Code Quality**: ✅ No errors, fully functional
 

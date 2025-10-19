@@ -155,7 +155,7 @@ def get_file_info(filename):
 def index():
     """Main page"""
     local_ip = get_local_ip()
-    port = 5000
+    port = 5001
     url = f"http://{local_ip}:{port}"
     qr_code = generate_qr_code(url)
     
@@ -394,7 +394,7 @@ def get_settings():
     settings = {
         'general': {
             'appName': 'Circuvent Technologies',
-            'serverPort': 5000,
+            'serverPort': 5001,
             'language': 'en',
             'timezone': 'UTC',
             'enableQR': True,
@@ -1363,7 +1363,7 @@ def manage_legacy_settings():
 if __name__ == '__main__':
     # Print startup information
     local_ip = get_local_ip()
-    port = 5000
+    port = 5001
     
     print("\n" + "=" * 60)
     print("🚀 Circuvent Technologies - NetShare Pro v2.0")
