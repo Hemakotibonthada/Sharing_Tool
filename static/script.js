@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     updateStats();
     updateTransferStatus();
-    setInterval(updateStats, 5001); // Update stats every 5 seconds
-    setInterval(updateTransferStatus, 2000); // Update transfer status every 2 seconds
+    setInterval(updateStats, 10000); // Update stats every 10 seconds (reduced from 5)
+    setInterval(updateTransferStatus, 5000); // Update transfer status every 5 seconds (reduced from 2)
     scanDevices();
 });
 

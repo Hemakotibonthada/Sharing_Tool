@@ -39,7 +39,7 @@ class HighSpeedTransfer:
         """Start background monitoring for admin panel"""
         def broadcast_stats():
             while True:
-                time.sleep(2)  # Update every 2 seconds
+                time.sleep(5)  # Update every 5 seconds (reduced from 2)
                 transfers = self.get_active_transfers()
                 if transfers:
                     self.socketio.emit('active_transfers', {

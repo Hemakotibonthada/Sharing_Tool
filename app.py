@@ -1541,7 +1541,7 @@ if __name__ == '__main__':
             app,
             host='0.0.0.0',
             port=port,
-            debug=True,
+            debug=False,  # Disable debug to reduce log noise
             use_reloader=False,  # Disable reloader to prevent port conflicts
             ssl_context=(SSL_CERT_FILE, SSL_KEY_FILE)
         )
@@ -1550,6 +1550,6 @@ if __name__ == '__main__':
             app,
             host='0.0.0.0',
             port=port,
-            debug=True,
+            debug=False,  # Disable debug to reduce log noise
             use_reloader=False  # Disable reloader to prevent port conflicts
         )
