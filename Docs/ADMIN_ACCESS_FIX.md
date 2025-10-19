@@ -60,21 +60,21 @@ document.cookie = 'authToken=; path=/; max-age=0';
 
 1. **Login as Admin:**
    ```
-   1. Go to http://192.168.1.14:5000/login
+   1. Go to http://192.168.1.14:5001/login
    2. Login with admin credentials
    3. You'll be redirected to home page
    ```
 
 2. **Access Admin Panel:**
    ```
-   1. Navigate to http://192.168.1.14:5000/admin
+   1. Navigate to http://192.168.1.14:5001/admin
    2. Should see admin panel immediately (no redirect)
    ```
 
 3. **Test Without Login:**
    ```
    1. Logout or open incognito window
-   2. Navigate to http://192.168.1.14:5000/admin
+   2. Navigate to http://192.168.1.14:5001/admin
    3. Should redirect to home page
    ```
 

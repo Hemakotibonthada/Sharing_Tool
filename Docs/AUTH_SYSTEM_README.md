@@ -125,7 +125,7 @@ JSON database files (auto-created):
 
 ### **First Time Setup**
 1. Start the server
-2. Navigate to `http://localhost:5000/login`
+2. Navigate to `http://localhost:5001/login`
 3. Default admin account:
    - Username: `admin`
    - Password: `admin123`

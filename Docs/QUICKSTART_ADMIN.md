@@ -14,8 +14,8 @@ python app.py
    Advanced File Sharing Server
 ============================================================
 
-📱 Access from this device: http://localhost:5000
-🌐 Access from network: http://192.168.1.14:5000
+📱 Access from this device: http://localhost:5001
+🌐 Access from network: http://192.168.1.14:5001
 
 💡 Scan the QR code on the webpage to access from mobile devices
 ...
@@ -26,11 +26,11 @@ python app.py
 ### Option A: Via API
 ```powershell
 # Using curl (if installed)
-curl -X POST http://localhost:5000/api/auth/register -H "Content-Type: application/json" -d '{\"username\":\"admin\",\"password\":\"admin123\",\"display_name\":\"System Admin\",\"role\":\"admin\"}'
+curl -X POST http://localhost:5001/api/auth/register -H "Content-Type: application/json" -d '{\"username\":\"admin\",\"password\":\"admin123\",\"display_name\":\"System Admin\",\"role\":\"admin\"}'
 ```
 
 ### Option B: Via Browser Console
-1. Open `http://localhost:5000` in browser
+1. Open `http://localhost:5001` in browser
 2. Open Developer Tools (F12)
 3. Go to Console tab
 4. Run:
@@ -49,7 +49,7 @@ fetch('/api/auth/register', {
 
 ## Step 3: Login
 
-1. Go to `http://localhost:5000`
+1. Go to `http://localhost:5001`
 2. Click "Login" button
 3. Enter credentials:
    - Username: `admin`
@@ -69,7 +69,7 @@ fetch('/api/auth/register', {
 
 ### Method 2: Direct URL
 ```
-http://localhost:5000/admin
+http://localhost:5001/admin
 ```
 
 ## Step 5: Explore Admin Panel
