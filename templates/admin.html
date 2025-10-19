@@ -16,9 +16,30 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             min-height: 100vh;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .admin-container {
+            position: relative;
+            z-index: 1;
         }
 
         .admin-container {
@@ -27,15 +48,28 @@
         }
 
         .admin-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 25px 35px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            margin-bottom: 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
         }
 
         .admin-title {
@@ -81,38 +115,60 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
         }
 
         .btn-primary {
-            background: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5568d3 0%, #6a4190 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
         }
 
         .btn-danger {
-            background: #f56565;
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
             color: white;
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
         }
 
         .btn-danger:hover {
-            background: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 101, 101, 0.5);
         }
 
         .stats-grid {
@@ -123,17 +179,42 @@
         }
 
         .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 28px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-color, #667eea), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 50px rgba(102, 126, 234, 0.25);
         }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-card:nth-child(1) { --card-color: #319795; }
+        .stat-card:nth-child(2) { --card-color: #2b6cb0; }
+        .stat-card:nth-child(3) { --card-color: #c05621; }
+        .stat-card:nth-child(4) { --card-color: #97266d; }
 
         .stat-header {
             display: flex;
@@ -159,10 +240,14 @@
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: 700;
-            color: #2d3748;
-            margin-bottom: 5px;
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
         }
 
         .stat-change {
@@ -179,11 +264,18 @@
         }
 
         .panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .panel:hover {
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.18);
+            transform: translateY(-2px);
         }
 
         .panel-header {
@@ -230,7 +322,13 @@
         }
 
         .table tr:hover {
-            background: #f7fafc;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
+
+        .table tr {
+            transition: all 0.2s ease;
         }
 
         .user-avatar {
@@ -281,30 +379,53 @@
         }
 
         .icon-btn {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             font-size: 14px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+
+        .icon-btn:active::after {
+            width: 100px;
+            height: 100px;
         }
 
         .icon-btn-edit {
-            background: #e6f2ff;
+            background: linear-gradient(135deg, #e6f2ff 0%, #bee3f8 100%);
             color: #2b6cb0;
+            box-shadow: 0 2px 8px rgba(43, 108, 176, 0.2);
         }
 
         .icon-btn-delete {
-            background: #fee;
+            background: linear-gradient(135deg, #fee 0%, #fcc 100%);
             color: #c53030;
+            box-shadow: 0 2px 8px rgba(197, 48, 48, 0.2);
         }
 
         .icon-btn:hover {
-            transform: scale(1.1);
+            transform: scale(1.15) rotate(5deg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .activity-item {
@@ -368,8 +489,9 @@
 
         .chart-container {
             position: relative;
-            height: 300px;
+            height: 350px;
             margin-top: 20px;
+            padding: 10px;
         }
 
         .full-width {
@@ -378,22 +500,40 @@
 
         .speed-meter {
             text-align: center;
-            padding: 30px;
+            padding: 40px;
+            position: relative;
         }
 
         .speed-value {
-            font-size: 48px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 56px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -2px;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+            50% {
+                transform: scale(1.05);
+                filter: brightness(1.2);
+            }
         }
 
         .speed-label {
-            font-size: 14px;
+            font-size: 15px;
             color: #718096;
-            margin-top: 10px;
+            margin-top: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .transfer-list {
@@ -424,16 +564,56 @@
 
         .progress-bar {
             width: 100%;
-            height: 6px;
+            height: 8px;
             background: #e2e8f0;
-            border-radius: 3px;
+            border-radius: 10px;
             overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 200% 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 10px;
+            position: relative;
+            animation: shimmerProgress 2s linear infinite;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.3), 
+                transparent
+            );
+            animation: progressGleam 2s ease-in-out infinite;
+        }
+
+        @keyframes shimmerProgress {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes progressGleam {
+            0%, 100% {
+                transform: translateX(-100%);
+            }
+            50% {
+                transform: translateX(100%);
+            }
         }
 
         .transfer-stats {
@@ -476,21 +656,89 @@
 
         /* Scrollbar styling */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
+            height: 10px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: rgba(241, 241, 241, 0.5);
             border-radius: 10px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #888;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             border-radius: 10px;
+            transition: all 0.3s;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Add animation to cards */
+        .stat-card,
+        .panel {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Loading skeleton */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                #f0f0f0 0px,
+                #e0e0e0 40px,
+                #f0f0f0 80px
+            );
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite linear;
         }
     </style>
 </head>
@@ -695,33 +943,151 @@
         // Initialize performance chart
         function initChart() {
             const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Create gradient fills
+            const uploadGradient = ctx.createLinearGradient(0, 0, 0, 350);
+            uploadGradient.addColorStop(0, 'rgba(102, 126, 234, 0.4)');
+            uploadGradient.addColorStop(1, 'rgba(102, 126, 234, 0.0)');
+            
+            const downloadGradient = ctx.createLinearGradient(0, 0, 0, 350);
+            downloadGradient.addColorStop(0, 'rgba(118, 75, 162, 0.4)');
+            downloadGradient.addColorStop(1, 'rgba(118, 75, 162, 0.0)');
+            
             performanceChart = new Chart(ctx, {
                 type: 'line',
-                data: chartData,
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Upload Speed (Mbps)',
+                        data: chartData.datasets[0].data,
+                        borderColor: '#667eea',
+                        backgroundColor: uploadGradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#667eea',
+                        pointHoverBorderWidth: 3
+                    }, {
+                        label: 'Download Speed (Mbps)',
+                        data: chartData.datasets[1].data,
+                        borderColor: '#764ba2',
+                        backgroundColor: downloadGradient,
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#764ba2',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#764ba2',
+                        pointHoverBorderWidth: 3
+                    }]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     plugins: {
                         legend: {
                             position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 13,
+                                    weight: '600',
+                                    family: 'Inter'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#2d3748',
+                            bodyColor: '#4a5568',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' Mbps';
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: 'Inter'
+                                },
+                                color: '#718096',
+                                callback: function(value) {
+                                    return value + ' Mbps';
+                                }
+                            },
                             title: {
                                 display: true,
-                                text: 'Speed (Mbps)'
+                                text: 'Transfer Speed',
+                                font: {
+                                    size: 13,
+                                    weight: '600',
+                                    family: 'Inter'
+                                },
+                                color: '#2d3748'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: 'Inter'
+                                },
+                                color: '#718096',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8
                             }
                         }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeInOutQuart'
                     }
                 }
             });
         }
 
-        // Update chart data
+        // Update chart data with smooth animation
         function updateChart(uploadSpeed, downloadSpeed) {
-            const now = new Date().toLocaleTimeString();
+            const now = new Date().toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
             
             chartData.labels.push(now);
             chartData.datasets[0].data.push(uploadSpeed);
@@ -734,7 +1100,23 @@
                 chartData.datasets[1].data.shift();
             }
 
-            performanceChart.update();
+            performanceChart.update('active');
+        }
+
+        // Animate counter
+        function animateValue(element, start, end, duration) {
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.round(current);
+            }, 16);
         }
 
         // Load admin data
@@ -753,11 +1135,26 @@
                 
                 const data = await response.json();
 
-                // Update statistics
-                document.getElementById('totalUsers').textContent = data.stats.total_users;
-                document.getElementById('totalFiles').textContent = data.stats.total_files;
+                // Update statistics with animation
+                const totalUsersEl = document.getElementById('totalUsers');
+                const totalFilesEl = document.getElementById('totalFiles');
+                const activeTransfersEl = document.getElementById('activeTransfers');
+                
+                const oldUsers = parseInt(totalUsersEl.textContent) || 0;
+                const oldFiles = parseInt(totalFilesEl.textContent) || 0;
+                const oldTransfers = parseInt(activeTransfersEl.textContent) || 0;
+                
+                if (oldUsers !== data.stats.total_users) {
+                    animateValue(totalUsersEl, oldUsers, data.stats.total_users, 800);
+                }
+                if (oldFiles !== data.stats.total_files) {
+                    animateValue(totalFilesEl, oldFiles, data.stats.total_files, 800);
+                }
+                if (oldTransfers !== data.stats.active_transfers) {
+                    animateValue(activeTransfersEl, oldTransfers, data.stats.active_transfers, 800);
+                }
+                
                 document.getElementById('storageUsed').textContent = formatBytes(data.stats.storage_used);
-                document.getElementById('activeTransfers').textContent = data.stats.active_transfers;
 
                 // Update users table
                 updateUsersTable(data.users);
@@ -769,7 +1166,35 @@
                 updateActivityList(data.recent_activity);
             } catch (error) {
                 console.error('Error loading admin data:', error);
+                showNotification('Failed to load admin data', 'error');
             }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#f56565' : type === 'success' ? '#48bb78' : '#667eea'};
+                color: white;
+                padding: 15px 25px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                font-weight: 600;
+                max-width: 300px;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
         // Update users table

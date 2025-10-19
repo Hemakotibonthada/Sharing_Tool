@@ -451,6 +451,86 @@ def save_settings():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# ==================== TEXT SHARING ENDPOINTS ====================
+
+# In-memory storage for shared texts (you can replace with database)
+shared_texts_storage = []
+text_id_counter = 0
+
+@app.route('/api/share-text', methods=['POST'])
+def share_text():
+    """Share a text snippet"""
+    global text_id_counter
+    data = request.get_json()
+    text = data.get('text', '').strip()
+    
+    if not text:
+        return jsonify({'error': 'Text cannot be empty'}), 400
+    
+    # Get user info if authenticated
+    author = 'Anonymous'
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if token:
+        user_session = auth_system.validate_session(token)
+        if user_session:
+            author = user_session.get('username', 'Anonymous')
+    
+    text_id_counter += 1
+    text_entry = {
+        'id': str(text_id_counter),
+        'text': text,
+        'author': author,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    shared_texts_storage.insert(0, text_entry)  # Add to beginning
+    
+    # Keep only last 100 texts
+    if len(shared_texts_storage) > 100:
+        shared_texts_storage.pop()
+    
+    return jsonify({
+        'success': True,
+        'id': text_entry['id'],
+        'message': 'Text shared successfully'
+    })
+
+@app.route('/api/shared-texts', methods=['GET'])
+def get_shared_texts():
+    """Get all shared texts"""
+    return jsonify({'texts': shared_texts_storage})
+
+@app.route('/api/shared-texts/<text_id>', methods=['DELETE'])
+def delete_shared_text(text_id):
+    """Delete a shared text"""
+    global shared_texts_storage
+    
+    # Find and remove the text
+    for i, text in enumerate(shared_texts_storage):
+        if text['id'] == text_id:
+            # Check if user is author or admin
+            author = text['author']
+            token = request.headers.get('Authorization', '').replace('Bearer ', '')
+            can_delete = False
+            
+            if token:
+                user_session = auth_system.validate_session(token)
+                if user_session:
+                    username = user_session.get('username')
+                    is_admin = auth_system.has_permission(username, 'delete_any')
+                    can_delete = username == author or is_admin
+            else:
+                # Allow deletion if author is Anonymous
+                can_delete = author == 'Anonymous'
+            
+            if not can_delete:
+                return jsonify({'error': 'Permission denied'}), 403
+            
+            shared_texts_storage.pop(i)
+            return jsonify({'success': True, 'message': 'Text deleted successfully'})
+    
+    return jsonify({'error': 'Text not found'}), 404
+
 # ==================== FILE PERMISSION ENDPOINTS ====================
 
 @app.route('/api/files/<filename>/permissions', methods=['GET'])
