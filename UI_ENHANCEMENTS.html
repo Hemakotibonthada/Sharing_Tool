@@ -1,0 +1,203 @@
+<!-- Add this to templates/index.html in the Upload Section -->
+<!-- Place it right after the upload area, before upload queue -->
+
+<div class="upload-options glass-effect" style="margin-top: 1.5rem; padding: 1rem; border-radius: 12px;">
+    <h3 style="margin-bottom: 1rem; font-size: 1rem; opacity: 0.9;">Upload Options</h3>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button id="compressionToggle" class="btn btn-secondary" onclick="toggleCompression()">
+            <i class="fas fa-compress"></i> Compression: OFF
+        </button>
+        <button id="versioningToggle" class="btn btn-secondary" onclick="toggleVersioning()">
+            <i class="fas fa-history"></i> Versioning: OFF
+        </button>
+        <button class="btn btn-secondary" onclick="uploadFolder()">
+            <i class="fas fa-folder-open"></i> Upload Folder
+        </button>
+    </div>
+</div>
+
+<!-- Also update the Quick Actions in Dashboard Section -->
+<!-- Replace existing Quick Actions with this enhanced version -->
+
+<div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="actions-grid">
+        <button class="action-btn glass-effect" onclick="navigateToSection('upload')">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>Upload Files</span>
+        </button>
+        <button class="action-btn glass-effect" onclick="uploadFolder()">
+            <i class="fas fa-folder-open"></i>
+            <span>Upload Folder</span>
+        </button>
+        <button class="action-btn glass-effect" onclick="navigateToSection('files')">
+            <i class="fas fa-folder"></i>
+            <span>Browse Files</span>
+        </button>
+        <button class="action-btn glass-effect" onclick="selectAllFiles(); navigateToSection('files')">
+            <i class="fas fa-check-double"></i>
+            <span>Select All</span>
+        </button>
+        <button class="action-btn glass-effect" onclick="deleteSelected()">
+            <i class="fas fa-trash"></i>
+            <span>Delete Selected</span>
+        </button>
+        <button class="action-btn glass-effect" onclick="downloadSelected()">
+            <i class="fas fa-download"></i>
+            <span>Download Selected</span>
+        </button>
+    </div>
+</div>
+
+<!-- Enhanced File Card Template -->
+<!-- The createFileCard() function in script.js already includes: -->
+<!-- - Download with progress button -->
+<!-- - Preview button (for supported types) -->
+<!-- - Versions button -->
+<!-- - Delete button -->
+
+<!-- Example of full file card structure generated: -->
+<!--
+<div class="file-card">
+    <input type="checkbox" class="file-checkbox" />
+    <div class="file-icon">
+        <i class="fas fa-file-image"></i>
+    </div>
+    <div class="file-name">example.jpg</div>
+    <div class="file-meta">
+        <div><i class="fas fa-hdd"></i> 2.5 MB</div>
+        <div><i class="fas fa-clock"></i> 2 mins ago</div>
+    </div>
+    <div class="file-actions">
+        <button onclick="downloadFileWithProgress('example.jpg')">
+            <i class="fas fa-download"></i> Download
+        </button>
+        <button onclick="previewFile('example.jpg')">
+            <i class="fas fa-eye"></i> Preview
+        </button>
+        <button onclick="showFileVersions('example.jpg')">
+            <i class="fas fa-history"></i> Versions
+        </button>
+        <button onclick="deleteFile('example.jpg')">
+            <i class="fas fa-trash"></i> Delete
+        </button>
+    </div>
+</div>
+-->
+
+<!-- CSS for new buttons (add to style.css) -->
+<style>
+.upload-options {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.upload-options h3 {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.btn-secondary {
+    background: rgba(71, 85, 105, 0.3);
+    color: var(--text-primary);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: rgba(71, 85, 105, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border-color: #10b981;
+}
+
+.btn-secondary i {
+    font-size: 1rem;
+}
+</style>
+
+<!-- Download Progress Container (auto-created by JavaScript) -->
+<!-- Will appear at bottom-right when downloads are active -->
+<!-- Structure: -->
+<!--
+<div id="downloadProgressContainer" class="download-progress-container glass-effect">
+    <div class="download-progress-item">
+        <div class="download-header">
+            <i class="fas fa-download"></i>
+            <span>filename.zip</span>
+            <span>45%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: 45%"></div>
+        </div>
+    </div>
+</div>
+-->
+
+<!-- Authentication Setup Instructions -->
+<!--
+To enable authentication:
+
+1. Edit app.py:
+   ENABLE_AUTH = True
+   AUTH_USERNAME = 'your_username'
+   AUTH_PASSWORD = 'your_password'
+
+2. Restart server
+
+3. Browser will prompt for login on first access
+-->
+
+<!-- HTTPS/SSL Setup Instructions -->
+<!--
+To enable HTTPS:
+
+1. Generate SSL certificate:
+   openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
+
+2. Edit app.py:
+   ENABLE_SSL = True
+   SSL_CERT_FILE = 'cert.pem'
+   SSL_KEY_FILE = 'key.pem'
+
+3. Restart server
+
+4. Access via https://192.168.1.14:5000
+-->
+
+<!-- Bandwidth Limiting Setup -->
+<!--
+To limit transfer speed:
+
+Edit app.py:
+   # Limit to 5 MB/s
+   BANDWIDTH_LIMIT = 5 * 1024 * 1024
+   
+   # Limit to 1 MB/s
+   BANDWIDTH_LIMIT = 1024 * 1024
+   
+   # Unlimited (default)
+   BANDWIDTH_LIMIT = None
+-->
+
+<!-- Compression Setup -->
+<!--
+To enable auto-compression:
+
+Edit app.py:
+   ENABLE_COMPRESSION = True
+
+Then restart server. Files will be compressed before upload (unless already compressed).
+-->

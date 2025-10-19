@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetShare Pro - Advanced File Sharing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-share-nodes"></i>
+                <h2>NetShare Pro</h2>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#files" class="nav-item" data-section="files">
+                <i class="fas fa-folder"></i>
+                <span>Files</span>
+            </a>
+            <a href="#upload" class="nav-item" data-section="upload">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>Upload</span>
+            </a>
+            <a href="#network" class="nav-item" data-section="network">
+                <i class="fas fa-network-wired"></i>
+                <span>Network</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="status-card">
+                <div class="status-indicator-lg"></div>
+                <div>
+                    <div class="status-label">Server Status</div>
+                    <div class="status-value">Online</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="top-header">
+            <button class="menu-btn" id="menuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search files...">
+            </div>
+
+            <div class="header-actions">
+                <button class="icon-btn" id="themeToggle" title="Toggle Theme">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="icon-btn" id="refreshBtn" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connected</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-title">
+                    <h1>Dashboard</h1>
+                    <p class="subtitle">Overview of your file sharing activity</p>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Total Files</div>
+                            <div class="stat-value" id="statTotalFiles">{{ total_files }}</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>+{{ stats.total_uploads }} uploads</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Storage Used</div>
+                            <div class="stat-value" id="statTotalSize">{{ (total_size / 1024 / 1024) | round(2) }} MB</div>
+                            <div class="stat-change">
+                                <i class="fas fa-info-circle"></i>
+                                <span>1 TB available</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Uploads</div>
+                            <div class="stat-value" id="statUploads">{{ stats.total_uploads }}</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-check-circle"></i>
+                                <span>All successful</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card glass-effect">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-cloud-download-alt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-label">Downloads</div>
+                            <div class="stat-value" id="statDownloads">{{ stats.total_downloads }}</div>
+                            <div class="stat-change">
+                                <i class="fas fa-arrow-down"></i>
+                                <span>Total downloads</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h2 class="section-subtitle">Quick Actions</h2>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="navigateToSection('upload')">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Files</span>
+                        </button>
+                        <button class="action-btn" onclick="navigateToSection('files')">
+                            <i class="fas fa-folder-open"></i>
+                            <span>Browse Files</span>
+                        </button>
+                        <button class="action-btn" onclick="selectAllFiles()">
+                            <i class="fas fa-check-double"></i>
+                            <span>Select All</span>
+                        </button>
+                        <button class="action-btn" onclick="deleteSelected()">
+                            <i class="fas fa-trash"></i>
+                            <span>Delete Selected</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity glass-effect">
+                    <h2 class="section-subtitle">
+                        <i class="fas fa-clock"></i>
+                        Recent Files
+                    </h2>
+                    <div id="recentFiles" class="recent-files-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Files Section -->
+            <section id="files-section" class="content-section">
+                <div class="section-title">
+                    <h1>File Manager</h1>
+                    <p class="subtitle">Browse and manage your shared files</p>
+                </div>
+
+                <!-- Bulk Actions -->
+                <div class="bulk-actions glass-effect" style="margin-bottom: 1rem; padding: 1rem; display: flex; gap: 1rem; align-items: center;">
+                    <button class="btn btn-primary" onclick="downloadSelected()" id="downloadSelectedBtn" disabled>
+                        <i class="fas fa-download"></i> Download Selected
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteSelected()" id="deleteSelectedBtn" disabled>
+                        <i class="fas fa-trash"></i> Delete Selected
+                    </button>
+                    <button class="btn btn-warning" onclick="clearAllFiles()">
+                        <i class="fas fa-broom"></i> Clear All
+                    </button>
+                    <span id="selectionInfo" style="margin-left: auto; color: var(--text-secondary); font-size: 0.9rem;">0 files selected</span>
+                </div>
+
+                <!-- File Filters -->
+                <div class="file-filters glass-effect">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-th"></i>
+                        All Files
+                    </button>
+                    <button class="filter-btn" data-filter="images">
+                        <i class="fas fa-image"></i>
+                        Images
+                    </button>
+                    <button class="filter-btn" data-filter="videos">
+                        <i class="fas fa-video"></i>
+                        Videos
+                    </button>
+                    <button class="filter-btn" data-filter="documents">
+                        <i class="fas fa-file-alt"></i>
+                        Documents
+                    </button>
+                    <button class="filter-btn" data-filter="archives">
+                        <i class="fas fa-file-archive"></i>
+                        Archives
+                    </button>
+                    <button class="filter-btn" data-filter="others">
+                        <i class="fas fa-ellipsis-h"></i>
+                        Others
+                    </button>
+                </div>
+
+                <!-- View Toggle -->
+                <div class="view-controls">
+                    <div class="view-toggle">
+                        <button class="view-btn active" data-view="grid">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                        <button class="view-btn" data-view="list">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                    <div class="sort-controls">
+                        <select id="sortBy" class="sort-select">
+                            <option value="date-desc">Latest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="size-desc">Largest First</option>
+                            <option value="size-asc">Smallest First</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Files Grid -->
+                <div class="files-container">
+                    <div class="files-grid" id="filesGrid">
+                        <!-- Files will be loaded here dynamically -->
+                    </div>
+
+                    <div class="empty-state" id="emptyState">
+                        <i class="fas fa-inbox"></i>
+                        <p>No files found</p>
+                        <p class="hint">Upload files to get started</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Upload Section -->
+            <section id="upload-section" class="content-section">
+                <div class="section-title">
+                    <h1>Upload Files</h1>
+                    <p class="subtitle">Share files across your network with advanced features</p>
+                </div>
+
+                <!-- Upload Options -->
+                <div class="upload-options glass-effect" style="margin-bottom: 1rem; padding: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" id="compressionToggle" onclick="toggleCompression()">
+                        <i class="fas fa-compress"></i> Compression: OFF
+                    </button>
+                    <button class="btn btn-secondary" id="versioningToggle" onclick="toggleVersioning()">
+                        <i class="fas fa-history"></i> Versioning: OFF
+                    </button>
+                    <button class="btn btn-primary" onclick="uploadFolder()">
+                        <i class="fas fa-folder-plus"></i> Upload Folder
+                    </button>
+                </div>
+
+                <div class="upload-area glass-effect" id="dropArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3>Drag & Drop Files Here</h3>
+                    <p>or</p>
+                    <label for="fileInput" class="btn btn-primary">
+                        <i class="fas fa-folder-open"></i>
+                        Browse Files
+                    </label>
+                    <input type="file" id="fileInput" multiple hidden>
+                    <div class="upload-info">
+                        <i class="fas fa-info-circle"></i>
+                        Maximum file size: 1TB | Up to 5 parallel uploads | Resumable | Auto-compression optional
+                    </div>
+                </div>
+
+                <!-- Upload Queue -->
+                <div class="upload-queue" id="uploadQueue" style="display: none;">
+                    <h3>Upload Queue</h3>
+                    <div id="uploadItems"></div>
+                </div>
+            </section>
+
+            <!-- Network Section -->
+            <section id="network-section" class="content-section">
+                <div class="section-title">
+                    <h1>Network Access</h1>
+                    <p class="subtitle">Connect from any device on your network</p>
+                </div>
+
+                <div class="network-grid">
+                    <div class="network-card glass-effect">
+                        <div class="card-header">
+                            <i class="fas fa-desktop"></i>
+                            <h3>Desktop Access</h3>
+                        </div>
+                        <div class="url-display">
+                            <input type="text" id="serverUrl" value="{{ url }}" readonly>
+                            <button class="btn-icon" onclick="copyUrl()" title="Copy URL">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="access-info">
+                            <div class="info-item">
+                                <i class="fas fa-globe"></i>
+                                <div>
+                                    <strong>IP Address</strong>
+                                    <span>{{ local_ip }}</span>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-plug"></i>
+                                <div>
+                                    <strong>Port</strong>
+                                    <span>{{ port }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="network-card glass-effect">
+                        <div class="card-header">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>Mobile Access</h3>
+                        </div>
+                        <div class="qr-section">
+                            <img src="{{ qr_code }}" alt="QR Code" class="qr-code">
+                            <p class="qr-hint">
+                                <i class="fas fa-qrcode"></i>
+                                Scan with your phone camera
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="network-tips glass-effect">
+                    <h3>
+                        <i class="fas fa-lightbulb"></i>
+                        Connection Tips
+                    </h3>
+                    <ul>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            Ensure all devices are on the same WiFi network
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            Disable firewall if you can't connect
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            Use the QR code for quick mobile access
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            Bookmark the URL for easy access
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Success!</span>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirm Deletion
+                </h3>
+            </div>
+            <p>Are you sure you want to delete <strong id="deleteFileName"></strong>?</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="fas fa-trash"></i>
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal" id="previewModal">
+        <div class="modal-content glass-effect preview-modal">
+            <div class="modal-header">
+                <h3 id="previewFileName">File Preview</h3>
+                <button class="close-btn" onclick="closePreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="preview-content" id="previewContent">
+                <!-- Preview content goes here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
