@@ -835,6 +835,37 @@ body {
     margin-bottom: 12px;
 }
 
+/* Permission Badges */
+.permission-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.permission-badge.public {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.permission-badge.private {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.permission-badge.restricted {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
 .file-actions {
     display: flex;
     flex-wrap: wrap;
@@ -2075,5 +2106,92 @@ body {
 
     .text-input-actions .btn {
         width: 100%;
+    }
+}
+
+/* ==================== TEXT SHARING STYLES ==================== */
+
+.text-sharing-tabs {
+    display: flex;
+    gap: 10px;
+    padding: 20px 20px 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.text-tab {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.text-tab:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.05);
+}
+
+.text-tab.active {
+    color: #6366f1;
+    border-bottom-color: #6366f1;
+}
+
+.text-tab i {
+    margin-right: 8px;
+}
+
+.text-tab-content {
+    display: none;
+}
+
+.text-tab-content.active {
+    display: block;
+}
+
+.shared-text-item {
+    animation: slideIn 0.3s ease;
+}
+
+.shared-text-item:hover {
+    background: rgba(255,255,255,0.08) !important;
+    transform: translateX(5px);
+    transition: all 0.3s ease;
+}
+
+.btn-icon {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #94a3b8;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-icon:hover {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

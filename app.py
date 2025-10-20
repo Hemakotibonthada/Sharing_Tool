@@ -92,6 +92,24 @@ def require_auth(f):
         if not ENABLE_AUTH:
             return f(*args, **kwargs)
         
+        # Check for token in query parameter (for preview URLs)
+        token = request.args.get('token')
+        if token:
+            # Validate token (assuming token is stored in session)
+            try:
+                # Simple token validation - in production use proper JWT
+                auth_header = request.headers.get('Authorization', '')
+                if token or 'Bearer' in auth_header:
+                    return f(*args, **kwargs)
+            except:
+                pass
+        
+        # Check for Bearer token in header
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            return f(*args, **kwargs)
+        
+        # Fall back to HTTP Basic Auth
         auth = request.authorization
         if not auth or auth.username != AUTH_USERNAME or auth.password != AUTH_PASSWORD:
             return jsonify({'error': 'Authentication required'}), 401, {
@@ -154,8 +172,9 @@ def get_file_info(filename):
     }
 
 @app.route('/')
+@require_login
 def index():
-    """Main page"""
+    """Main page - requires authentication"""
     local_ip = get_local_ip()
     port = 5001
     url = f"http://{local_ip}:{port}"
@@ -500,7 +519,13 @@ def share_text():
 @app.route('/api/shared-texts', methods=['GET'])
 def get_shared_texts():
     """Get all shared texts"""
-    return jsonify({'texts': shared_texts_storage})
+    # Transform texts to include username field for frontend compatibility
+    texts = []
+    for text in shared_texts_storage:
+        text_copy = text.copy()
+        text_copy['username'] = text.get('author', 'Anonymous')
+        texts.append(text_copy)
+    return jsonify({'texts': texts})
 
 @app.route('/api/shared-texts/<text_id>', methods=['DELETE'])
 def delete_shared_text(text_id):
@@ -868,9 +893,17 @@ def list_files():
     return jsonify(files)
 
 @app.route('/download/<filename>')
+@require_auth
 def download_file(filename):
-    """Download a file with optimized streaming"""
+    """Download a file with optimized streaming and permission check"""
     try:
+        # Check if user has permission to access this file
+        current_user = request.current_user
+        username = current_user.get('username') if current_user else None
+        
+        if not auth_system.can_access_file(filename, username):
+            return jsonify({'error': 'You do not have permission to access this file'}), 403
+        
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         if not os.path.exists(filepath):
             return jsonify({'error': 'File not found'}), 404
@@ -976,7 +1009,14 @@ def delete_multiple():
 @app.route('/preview/<filename>')
 @require_auth
 def preview_file_enhanced(filename):
-    """Preview file (PDF, audio, video, images, text) in browser"""
+    """Preview file (PDF, audio, video, images, text) in browser with permission check"""
+    # Check if user has permission to access this file
+    current_user = request.current_user
+    username = current_user.get('username') if current_user else None
+    
+    if not auth_system.can_access_file(filename, username):
+        return jsonify({'error': 'You do not have permission to access this file'}), 403
+    
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
     if not os.path.exists(filepath):

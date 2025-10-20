@@ -335,16 +335,38 @@
                 </div>
 
                 <!-- Upload Options -->
-                <div class="upload-options glass-effect" style="margin-bottom: 1rem; padding: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <button class="btn btn-secondary" id="compressionToggle" onclick="toggleCompression()">
-                        <i class="fas fa-compress"></i> Compression: OFF
-                    </button>
-                    <button class="btn btn-secondary" id="versioningToggle" onclick="toggleVersioning()">
-                        <i class="fas fa-history"></i> Versioning: OFF
-                    </button>
-                    <button class="btn btn-primary" onclick="uploadFolder()">
-                        <i class="fas fa-folder-plus"></i> Upload Folder
-                    </button>
+                <div class="upload-options glass-effect" style="margin-bottom: 1rem; padding: 1rem;">
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+                        <button class="btn btn-secondary" id="compressionToggle" onclick="toggleCompression()">
+                            <i class="fas fa-compress"></i> Compression: OFF
+                        </button>
+                        <button class="btn btn-secondary" id="versioningToggle" onclick="toggleVersioning()">
+                            <i class="fas fa-history"></i> Versioning: OFF
+                        </button>
+                        <button class="btn btn-primary" onclick="uploadFolder()">
+                            <i class="fas fa-folder-plus"></i> Upload Folder
+                        </button>
+                        
+                        <!-- File Permission Selector -->
+                        <div style="flex: 1; min-width: 250px;">
+                            <label style="display: block; margin-bottom: 5px; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                                <i class="fas fa-shield-alt"></i> File Permission:
+                            </label>
+                            <select id="filePermission" style="width: 100%; padding: 10px 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-size: 14px; cursor: pointer;">
+                                <option value="public">🌐 Public - Everyone can view</option>
+                                <option value="private">🔒 Private - Only me</option>
+                                <option value="restricted">👥 Restricted - Specific users</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Restricted Users Input (hidden by default) -->
+                        <div id="restrictedUsersDiv" style="flex: 1; min-width: 250px; display: none;">
+                            <label style="display: block; margin-bottom: 5px; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                                <i class="fas fa-users"></i> Allowed Users:
+                            </label>
+                            <input type="text" id="restrictedUsers" placeholder="Enter usernames (comma separated)" style="width: 100%; padding: 10px 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-size: 14px;">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="upload-area glass-effect" id="dropArea">
@@ -398,6 +420,18 @@
                                     <span>{{ local_ip }}</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Card -->
+                    <div class="network-card glass-effect">
+                        <div class="card-header">
+                            <i class="fas fa-qrcode"></i>
+                            <h3>Mobile Access</h3>
+                        </div>
+                        <div class="qr-container" style="text-align: center; padding: 20px;">
+                            <img src="{{ qr_code }}" alt="QR Code" style="max-width: 200px; border-radius: 8px; background: white; padding: 10px;">
+                            <p style="margin-top: 15px; color: #888;">Scan with your phone to access</p>
                         </div>
                     </div>
 
@@ -604,6 +638,81 @@
                     </div>
                 </div>
             </div>
+                </div>
+    </div>
+
+    <!-- Text Sharing Panel -->
+    <div class="modal" id="textSharingModal" style="display: none;">
+        <div class="modal-content glass-effect" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-comment-dots"></i>
+                    Share Text
+                </h3>
+                <button class="close-btn" onclick="closeTextSharingPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="text-sharing-tabs">
+                <button class="text-tab active" onclick="switchTextTab('send')">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Text
+                </button>
+                <button class="text-tab" onclick="switchTextTab('receive')">
+                    <i class="fas fa-inbox"></i>
+                    Received Texts
+                </button>
+            </div>
+
+            <!-- Send Text Tab -->
+            <div id="sendTextTab" class="text-tab-content active">
+                <div style="padding: 20px;">
+                    <label for="textToShare" style="display: block; margin-bottom: 10px; color: #fff; font-weight: 500;">
+                        <i class="fas fa-pen"></i> Enter your text:
+                    </label>
+                    <textarea 
+                        id="textToShare" 
+                        placeholder="Type or paste your text here..."
+                        style="width: 100%; min-height: 200px; padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.3); color: #fff; font-family: inherit; font-size: 14px; resize: vertical;"
+                    ></textarea>
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-primary" onclick="shareText()" style="flex: 1;">
+                            <i class="fas fa-share"></i>
+                            Share Text
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearTextInput()">
+                            <i class="fas fa-eraser"></i>
+                            Clear
+                        </button>
+                    </div>
+                    
+                    <div id="shareTextStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Receive Text Tab -->
+            <div id="receiveTextTab" class="text-tab-content" style="display: none;">
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: #fff; margin: 0;">
+                            <i class="fas fa-list"></i> Shared Texts
+                        </h4>
+                        <button class="btn btn-secondary btn-sm" onclick="refreshSharedTexts()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="sharedTextsList" style="max-height: 400px; overflow-y: auto;">
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No shared texts yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -611,3 +720,4 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
+```

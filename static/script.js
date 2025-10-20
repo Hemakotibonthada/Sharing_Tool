@@ -95,10 +95,10 @@ async function checkAuthStatus() {
     }
 }
 
-// Show login button
+// Show login button or redirect to login page
 function showLoginButton() {
-    document.getElementById('userProfile').style.display = 'none';
-    document.getElementById('loginBtnHeader').style.display = 'block';
+    // Redirect to login page if not authenticated
+    window.location.href = '/login';
 }
 
 // Show user profile
@@ -217,6 +217,19 @@ function setupEventListeners() {
     const refreshBtn = document.getElementById('refreshBtn');
     const themeToggle = document.getElementById('themeToggle');
     const sortBy = document.getElementById('sortBy');
+    const filePermission = document.getElementById('filePermission');
+    const restrictedUsersDiv = document.getElementById('restrictedUsersDiv');
+
+    // Permission selector change
+    if (filePermission) {
+        filePermission.addEventListener('change', (e) => {
+            if (e.target.value === 'restricted') {
+                restrictedUsersDiv.style.display = 'block';
+            } else {
+                restrictedUsersDiv.style.display = 'none';
+            }
+        });
+    }
 
     // Click to browse (but not when clicking the label)
     dropArea.addEventListener('click', (e) => {
@@ -380,12 +393,21 @@ function handleFiles(e) {
     
     if (files.length === 0) return;
 
+    // Get permission settings before adding to queue
+    const permission = document.getElementById('filePermission')?.value || 'public';
+    const allowedUsers = document.getElementById('restrictedUsers')?.value || '';
+    
     document.getElementById('uploadQueue').style.display = 'block';
     
-    // Add all files to queue
+    // Add all files to queue with permission data
     Array.from(files).forEach((file, index) => {
         const uploadId = Date.now() + index;
-        uploadQueue.push({ file, uploadId });
+        uploadQueue.push({ 
+            file, 
+            uploadId,
+            permission,
+            allowedUsers 
+        });
     });
     
     // Process queue with parallel uploads
@@ -398,19 +420,26 @@ function handleFiles(e) {
 function processUploadQueue() {
     // Start parallel uploads up to MAX_PARALLEL_UPLOADS
     while (uploadQueue.length > 0 && activeUploads.length < MAX_PARALLEL_UPLOADS) {
-        const { file, uploadId } = uploadQueue.shift();
-        uploadFile(file, uploadId);
+        const queueItem = uploadQueue.shift();
+        uploadFile(queueItem.file, queueItem.uploadId, 0, queueItem.permission, queueItem.allowedUsers);
     }
 }
 
-function uploadFile(file, uploadId, resumeOffset = 0) {
+function uploadFile(file, uploadId, resumeOffset = 0, permission = 'public', allowedUsers = '') {
     // Use high-speed WebSocket transfer
     const uploadItem = createUploadItem(file, uploadId);
     document.getElementById('uploadItems').appendChild(uploadItem);
     
+    // Show immediate "preparing" status
+    updateUploadProgress(uploadId, 0, 0);
+    const speedText = document.getElementById(`upload-speed-${uploadId}`);
+    if (speedText) speedText.textContent = 'Preparing...';
+    
     activeUploads.push(uploadId);
     
     highSpeedTransfer.uploadFile(file, {
+        permission: permission,
+        allowedUsers: allowedUsers,
         onProgress: (data) => {
             updateUploadProgress(uploadId, data.progress, data.speed_mbps * 1000000 / 8); // Convert Mbps to bytes/sec
         }
@@ -429,12 +458,78 @@ function uploadFile(file, uploadId, resumeOffset = 0) {
         }, 1000);
         
     }).catch((error) => {
-        console.error('Upload error:', error);
+        console.error('High-speed upload failed, trying regular HTTP upload:', error);
+        
+        // Fallback to regular HTTP upload with permission data
+        uploadFileHTTP(file, uploadId, resumeOffset, permission, allowedUsers);
+    });
+}
+
+// Fallback HTTP upload function for Mac compatibility
+function uploadFileHTTP(file, uploadId, resumeOffset = 0, permission = 'public', allowedUsers = '') {
+    console.log('Using regular HTTP upload for:', file.name);
+    
+    // Show immediate "uploading" status
+    const speedText = document.getElementById(`upload-speed-${uploadId}`);
+    if (speedText) speedText.textContent = 'Starting...';
+    updateUploadProgress(uploadId, 0.1, 0); // Show tiny progress immediately
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('permission', permission);
+    formData.append('allowed_users', allowedUsers);
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+            const progress = (e.loaded / e.total) * 100;
+            const speed = e.loaded / ((Date.now() - startTime) / 1000); // bytes per second
+            updateUploadProgress(uploadId, progress, speed);
+        }
+    });
+    
+    const startTime = Date.now();
+    
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const speedMbps = (file.size * 8) / (elapsed * 1000000);
+            
+            activeUploads = activeUploads.filter(id => id !== uploadId);
+            showToast(`${file.name} uploaded at ${speedMbps.toFixed(2)} Mbps (HTTP)`, 'success');
+            completeUpload(uploadId);
+            
+            setTimeout(() => {
+                document.getElementById(`upload-${uploadId}`)?.remove();
+                loadFiles();
+                updateStats();
+                processUploadQueue();
+            }, 1000);
+        } else {
+            console.error('HTTP upload failed:', xhr.responseText);
+            showToast(`Upload failed: ${file.name}`, 'error');
+            failUpload(uploadId);
+            activeUploads = activeUploads.filter(id => id !== uploadId);
+            processUploadQueue();
+        }
+    };
+    
+    xhr.onerror = function() {
+        console.error('HTTP upload error');
         showToast(`Upload failed: ${file.name}`, 'error');
         failUpload(uploadId);
         activeUploads = activeUploads.filter(id => id !== uploadId);
         processUploadQueue();
-    });
+    };
+    
+    // Add auth header if available
+    if (authToken) {
+        xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    }
+    
+    xhr.open('POST', '/upload', true);
+    xhr.send(formData);
 }
 
 function createUploadItem(file, uploadId) {
@@ -597,6 +692,15 @@ function createFileCard(file) {
     const isText = file.type && (file.type.startsWith('text/') || file.type.includes('json') || file.type.includes('javascript'));
     const canPreview = isImage || isVideo || isAudio || isPDF || isText;
     
+    // Permission badge
+    const permission = file.permission || 'public';
+    const permissionBadges = {
+        'public': '<span class="permission-badge public" title="Public - Everyone can view"><i class="fas fa-globe"></i> Public</span>',
+        'private': '<span class="permission-badge private" title="Private - Only me"><i class="fas fa-lock"></i> Private</span>',
+        'restricted': '<span class="permission-badge restricted" title="Restricted - Specific users"><i class="fas fa-users"></i> Restricted</span>'
+    };
+    const permissionBadge = permissionBadges[permission] || permissionBadges['public'];
+    
     return `
         <div class="file-card ${selectedFiles.has(file.name) ? 'selected' : ''}" data-filename="${escapeHtml(file.name)}">
             <input type="checkbox" class="file-checkbox" onchange="toggleFileSelection('${escapeHtml(file.name)}')" ${selectedFiles.has(file.name) ? 'checked' : ''}>
@@ -607,6 +711,7 @@ function createFileCard(file) {
             <div class="file-meta">
                 <div><i class="fas fa-hdd"></i> ${size}</div>
                 <div><i class="fas fa-clock"></i> ${file.modified}</div>
+                <div>${permissionBadge}</div>
             </div>
             <div class="file-actions">
                 <button class="btn-download" onclick="downloadFileWithProgress('${escapeHtml(file.name)}')">
@@ -1211,23 +1316,30 @@ async function previewFile(filename) {
     
     let previewHTML = '';
     
+    // Add auth token to preview URLs
+    const authParam = authToken ? `?token=${authToken}` : '';
+    
     if (previewTypes.image.includes(ext)) {
-        previewHTML = `<img src="/preview/${encodeURIComponent(filename)}" style="max-width: 100%; max-height: 80vh;" alt="${escapeHtml(filename)}">`;
+        previewHTML = `<img src="/preview/${encodeURIComponent(filename)}${authParam}" style="max-width: 100%; max-height: 80vh;" alt="${escapeHtml(filename)}">`;
     } else if (previewTypes.video.includes(ext)) {
         previewHTML = `<video controls style="max-width: 100%; max-height: 80vh;">
-            <source src="/preview/${encodeURIComponent(filename)}" type="video/${ext}">
+            <source src="/preview/${encodeURIComponent(filename)}${authParam}" type="video/${ext}">
             Your browser does not support video playback.
         </video>`;
     } else if (previewTypes.audio.includes(ext)) {
         previewHTML = `<audio controls style="width: 100%;">
-            <source src="/preview/${encodeURIComponent(filename)}" type="audio/${ext}">
+            <source src="/preview/${encodeURIComponent(filename)}${authParam}" type="audio/${ext}">
             Your browser does not support audio playback.
         </audio>`;
     } else if (previewTypes.pdf.includes(ext)) {
-        previewHTML = `<iframe src="/preview/${encodeURIComponent(filename)}" style="width: 100%; height: 80vh; border: none;"></iframe>`;
+        previewHTML = `<iframe src="/preview/${encodeURIComponent(filename)}${authParam}" style="width: 100%; height: 80vh; border: none;"></iframe>`;
     } else if (previewTypes.text.includes(ext)) {
         try {
-            const response = await fetch(`/preview/${encodeURIComponent(filename)}`);
+            const headers = {};
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            const response = await fetch(`/preview/${encodeURIComponent(filename)}`, { headers });
             const text = await response.text();
             previewHTML = `<pre style="max-height: 80vh; overflow: auto; padding: 1rem; background: #1a1a1a; color: #fff; border-radius: 8px;">${escapeHtml(text)}</pre>`;
         } catch (error) {
@@ -1536,7 +1648,9 @@ async function deleteFile(filename) {
 
 // Preview file
 function previewFile(filename) {
-    window.open(`/preview/${encodeURIComponent(filename)}`, '_blank');
+    // Add auth token to preview URL
+    const authParam = authToken ? `?token=${authToken}` : '';
+    window.open(`/preview/${encodeURIComponent(filename)}${authParam}`, '_blank');
 }
 
 // Show file versions
@@ -1573,4 +1687,218 @@ function scanDevices() {
         .catch(() => {
             deviceList.innerHTML = `<div class='empty-state'><i class='fas fa-exclamation-circle'></i><p>Failed to scan network</p></div>`;
         });
+}
+
+// ==================== TEXT SHARING ====================
+
+function showTextSharingPanel() {
+    const modal = document.getElementById('textSharingModal');
+    modal.style.display = 'flex';
+    switchTextTab('send');
+    refreshSharedTexts();
+}
+
+function closeTextSharingPanel() {
+    const modal = document.getElementById('textSharingModal');
+    modal.style.display = 'none';
+}
+
+function switchTextTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.text-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.text-tab').classList.add('active');
+    
+    // Update tab content
+    document.getElementById('sendTextTab').style.display = tab === 'send' ? 'block' : 'none';
+    document.getElementById('receiveTextTab').style.display = tab === 'receive' ? 'block' : 'none';
+    
+    if (tab === 'receive') {
+        refreshSharedTexts();
+    }
+}
+
+async function shareText() {
+    const textInput = document.getElementById('textToShare');
+    const statusDiv = document.getElementById('shareTextStatus');
+    const text = textInput.value.trim();
+    
+    if (!text) {
+        showToast('Please enter some text to share', 'error');
+        return;
+    }
+    
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/api/share-text', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ text: text })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+            statusDiv.style.color = '#10b981';
+            statusDiv.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <strong>Text shared successfully!</strong>
+                <p style="margin: 5px 0 0 0; font-size: 12px;">ID: ${data.id}</p>
+            `;
+            textInput.value = '';
+            showToast('Text shared successfully!', 'success');
+            
+            // Auto-hide status after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        } else {
+            throw new Error(data.error || 'Failed to share text');
+        }
+    } catch (error) {
+        console.error('Share text error:', error);
+        statusDiv.style.display = 'block';
+        statusDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+        statusDiv.style.color = '#ef4444';
+        statusDiv.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>Failed to share text</strong>
+            <p style="margin: 5px 0 0 0; font-size: 12px;">${error.message}</p>
+        `;
+    }
+}
+
+function clearTextInput() {
+    document.getElementById('textToShare').value = '';
+    document.getElementById('shareTextStatus').style.display = 'none';
+}
+
+async function refreshSharedTexts() {
+    const listDiv = document.getElementById('sharedTextsList');
+    
+    try {
+        const headers = {};
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/api/shared-texts', { headers });
+        const data = await response.json();
+        
+        if (response.ok && data.texts && data.texts.length > 0) {
+            listDiv.innerHTML = data.texts.map(item => `
+                <div class="shared-text-item glass-effect" style="padding: 15px; margin-bottom: 10px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <strong style="color: #60a5fa;">
+                                <i class="fas fa-user"></i>
+                                ${escapeHtml(item.username || 'Anonymous')}
+                            </strong>
+                            <div style="font-size: 11px; color: #888; margin-top: 3px;">
+                                <i class="fas fa-clock"></i>
+                                ${formatTimestamp(item.timestamp)}
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn-icon" onclick="copySharedText('${escapeHtml(item.text)}')" title="Copy">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button class="btn-icon" onclick="deleteSharedText('${item.id}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div style="padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; color: #fff; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">
+                        ${escapeHtml(item.text)}
+                    </div>
+                    <div style="font-size: 11px; color: #888; margin-top: 8px;">
+                        <i class="fas fa-fingerprint"></i>
+                        ID: ${item.id}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            listDiv.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No shared texts yet</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Refresh shared texts error:', error);
+        listDiv.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Failed to load shared texts</p>
+            </div>
+        `;
+    }
+}
+
+function copySharedText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Text copied to clipboard!', 'success');
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        showToast('Failed to copy text', 'error');
+    });
+}
+
+async function deleteSharedText(id) {
+    if (!confirm('Delete this shared text?')) {
+        return;
+    }
+    
+    try {
+        const headers = {};
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch(`/api/shared-texts/${id}`, {
+            method: 'DELETE',
+            headers: headers
+        });
+        
+        if (response.ok) {
+            showToast('Text deleted successfully', 'success');
+            refreshSharedTexts();
+        } else {
+            throw new Error('Failed to delete text');
+        }
+    } catch (error) {
+        console.error('Delete shared text error:', error);
+        showToast('Failed to delete text', 'error');
+    }
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    // Less than 1 minute
+    if (diff < 60000) {
+        return 'Just now';
+    }
+    // Less than 1 hour
+    if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    }
+    // Less than 24 hours
+    if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+    // More than 24 hours
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 }

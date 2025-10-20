@@ -119,7 +119,10 @@ class AuthSystem:
     
     def validate_session(self, token):
         """Validate session token and return user info"""
-        if not token or token not in self.sessions:
+        if not token:
+            return None
+            
+        if token not in self.sessions:
             return None
         
         session_data = self.sessions[token]
@@ -311,12 +314,23 @@ def require_login(f):
     """Decorator to require authentication"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Check for token in Authorization header
         token = request.headers.get('Authorization')
         if token and token.startswith('Bearer '):
             token = token[7:]
         
+        # Also check for token in cookies
+        if not token:
+            token = request.cookies.get('authToken')
+        
         user_session = auth_system.validate_session(token)
+        
         if not user_session:
+            # If it's an HTML request, redirect to login
+            if request.accept_mimetypes.accept_html:
+                from flask import redirect, url_for
+                return redirect(url_for('login_page'))
+            # If it's an API request, return JSON error
             return jsonify({'error': 'Authentication required'}), 401
         
         # Add user info to request
