@@ -354,12 +354,45 @@
             }
         });
 
-        // Check if already logged in
+        // Check if already logged in (with delay to prevent redirect loops)
+        let redirecting = false;
         window.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('authToken');
-            if (token) {
-                window.location.href = '/';
-            }
+            // Small delay to prevent immediate redirect loop
+            setTimeout(() => {
+                if (redirecting) return;
+                
+                const token = localStorage.getItem('authToken');
+                if (token && token.length > 0) {
+                    // Verify token is valid before redirecting
+                    redirecting = true;
+                    
+                    fetch('/api/auth/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Token is valid, redirect to home
+                            showAlert('Already logged in. Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = '/';
+                            }, 500);
+                        } else {
+                            // Token invalid, clear it and stay on login page
+                            localStorage.removeItem('authToken');
+                            document.cookie = 'authToken=; path=/; max-age=0';
+                            redirecting = false;
+                        }
+                    })
+                    .catch(() => {
+                        // Network error, just clear token
+                        localStorage.removeItem('authToken');
+                        document.cookie = 'authToken=; path=/; max-age=0';
+                        redirecting = false;
+                    });
+                }
+            }, 300); // 300ms delay to prevent loop
         });
     </script>
 </body>

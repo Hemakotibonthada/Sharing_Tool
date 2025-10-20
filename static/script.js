@@ -59,10 +59,19 @@ function initParticles() {
 // ==================== AUTHENTICATION ====================
 
 // Check authentication status on page load
+let authCheckInProgress = false;
 async function checkAuthStatus() {
+    // Prevent multiple simultaneous auth checks
+    if (authCheckInProgress) {
+        console.log('Auth check already in progress, skipping...');
+        return;
+    }
+    
+    authCheckInProgress = true;
     authToken = localStorage.getItem('authToken');
     
     if (!authToken) {
+        authCheckInProgress = false;
         showLoginButton();
         return;
     }
@@ -92,13 +101,27 @@ async function checkAuthStatus() {
     } catch (error) {
         console.error('Auth check failed:', error);
         showLoginButton();
+    } finally {
+        authCheckInProgress = false;
     }
 }
 
 // Show login button or redirect to login page
+let isRedirecting = false;
 function showLoginButton() {
-    // Redirect to login page if not authenticated
-    window.location.href = '/login';
+    // Prevent multiple simultaneous redirects
+    if (isRedirecting) return;
+    
+    // Check if we're already on the login page
+    if (window.location.pathname === '/login') return;
+    
+    // Add a small delay to prevent redirect loops
+    isRedirecting = true;
+    console.log('Not authenticated, redirecting to login...');
+    
+    setTimeout(() => {
+        window.location.href = '/login';
+    }, 500);
 }
 
 // Show user profile
