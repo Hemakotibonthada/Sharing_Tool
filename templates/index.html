@@ -152,7 +152,7 @@
 
                 <!-- Statistics Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card glass-effect">
+                    <div class="stat-card glass-effect clickable" onclick="navigateToSection('files')" title="Click to view all files">
                         <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                             <i class="fas fa-folder"></i>
                         </div>
@@ -164,9 +164,12 @@
                                 <span>+{{ stats.total_uploads }} uploads</span>
                             </div>
                         </div>
+                        <div class="card-hover-indicator">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-card glass-effect">
+                    <div class="stat-card glass-effect clickable" onclick="navigateToSection('files')" title="Click to view storage details">
                         <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                             <i class="fas fa-database"></i>
                         </div>
@@ -178,9 +181,12 @@
                                 <span>1 TB available</span>
                             </div>
                         </div>
+                        <div class="card-hover-indicator">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-card glass-effect">
+                    <div class="stat-card glass-effect clickable" onclick="navigateToSection('upload')" title="Click to upload files">
                         <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                             <i class="fas fa-cloud-upload-alt"></i>
                         </div>
@@ -192,9 +198,12 @@
                                 <span>All successful</span>
                             </div>
                         </div>
+                        <div class="card-hover-indicator">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
                     </div>
 
-                    <div class="stat-card glass-effect">
+                    <div class="stat-card glass-effect clickable" onclick="navigateToSection('files')" title="Click to view downloads">
                         <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
                             <i class="fas fa-cloud-download-alt"></i>
                         </div>
@@ -205,6 +214,9 @@
                                 <i class="fas fa-arrow-down"></i>
                                 <span>Total downloads</span>
                             </div>
+                        </div>
+                        <div class="card-hover-indicator">
+                            <i class="fas fa-arrow-right"></i>
                         </div>
                     </div>
                 </div>

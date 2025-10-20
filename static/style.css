@@ -557,14 +557,68 @@ body {
 .stat-card {
     padding: 15px;
     border-radius: 12px;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     gap: 15px;
     align-items: flex-start;
+    position: relative;
+    overflow: hidden;
 }
 
 .stat-card:hover {
     transform: translateY(-3px);
+}
+
+/* Clickable stat cards */
+.stat-card.clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.stat-card.clickable:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.25), 
+                0 0 0 1px rgba(102, 126, 234, 0.3);
+}
+
+.stat-card.clickable:active {
+    transform: translateY(-2px) scale(0.98);
+}
+
+/* Hover indicator arrow */
+.card-hover-indicator {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%) translateX(10px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    color: var(--primary);
+    font-size: 1.2rem;
+}
+
+.stat-card.clickable:hover .card-hover-indicator {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+}
+
+/* Ripple effect on click */
+.stat-card.clickable::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.stat-card.clickable:active::after {
+    width: 300px;
+    height: 300px;
 }
 
 .stat-icon {
@@ -2251,6 +2305,28 @@ body {
         padding: 15px;
     }
     
+    /* Enhanced clickable cards on mobile */
+    .stat-card.clickable {
+        /* Larger tap target on mobile */
+        min-height: 80px;
+    }
+    
+    .stat-card.clickable:active {
+        transform: scale(0.97);
+        opacity: 0.9;
+    }
+    
+    .card-hover-indicator {
+        /* Always show on mobile */
+        opacity: 0.5;
+        transform: translateY(-50%) translateX(0);
+    }
+    
+    .stat-card.clickable:active .card-hover-indicator {
+        opacity: 1;
+        transform: translateY(-50%) translateX(5px);
+    }
+    
     /* Upload area for mobile */
     .upload-section {
         padding: 15px;
@@ -2499,6 +2575,7 @@ body {
 .mobile-device {
     /* Prevent text selection on mobile for better UX */
     -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+    touch-action: manipulation; /* Fast taps, no double-tap zoom */
 }
 
 .mobile-device .file-card,

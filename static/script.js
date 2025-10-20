@@ -179,6 +179,11 @@ function initNavigation() {
 
 // Navigate to section
 function navigateToSection(section) {
+    console.log('Navigating to section:', section);
+    
+    // Visual feedback - toast notification
+    showToast(`Opening ${section.charAt(0).toUpperCase() + section.slice(1)} section...`, 'info');
+    
     // Update nav items
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
@@ -187,14 +192,19 @@ function navigateToSection(section) {
         }
     });
     
-    // Update content sections
+    // Update content sections with smooth transition
     document.querySelectorAll('.content-section').forEach(sec => {
         sec.classList.remove('active');
     });
     
     const targetSection = document.getElementById(`${section}-section`);
     if (targetSection) {
-        targetSection.classList.add('active');
+        // Small delay for smooth transition
+        setTimeout(() => {
+            targetSection.classList.add('active');
+            // Scroll to top of section
+            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
     }
     
     // Close sidebar on mobile
