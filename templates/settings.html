@@ -1124,17 +1124,35 @@
         });
 
         // Check authentication on page load
+        let authCheckInProgress = false;
+        let redirectingToLogin = false;
+        
         async function checkAuth() {
-            console.log('Checking authentication...');
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                console.warn('No auth token found, redirecting to login');
-                window.location.href = '/login';
+            if (authCheckInProgress || redirectingToLogin) {
+                console.log('Auth check or redirect already in progress, skipping');
                 return false;
             }
+            
+            authCheckInProgress = true;
+            console.log('Checking authentication...');
+            const token = localStorage.getItem('authToken');
+            
+            if (!token) {
+                if (!redirectingToLogin && window.location.pathname !== '/login') {
+                    redirectingToLogin = true;
+                    console.warn('No auth token found, redirecting to login');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 500);
+                }
+                authCheckInProgress = false;
+                return false;
+            }
+            
             console.log('Auth token found, syncing to cookie');
             // Sync token to cookie for server-side validation
             document.cookie = `authToken=${token}; path=/; max-age=604800`;
+            authCheckInProgress = false;
             return true;
         }
 

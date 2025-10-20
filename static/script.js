@@ -21,6 +21,12 @@ let highSpeedTransfer = null;  // High-speed transfer instance
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    // Only run main app initialization if NOT on login page
+    if (window.location.pathname === '/login') {
+        console.log('On login page, skipping main app initialization');
+        return;
+    }
+    
     // Initialize high-speed transfer system
     if (typeof HighSpeedTransfer !== 'undefined') {
         highSpeedTransfer = new HighSpeedTransfer();
