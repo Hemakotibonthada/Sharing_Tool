@@ -1,10 +1,10 @@
 {
   "admin": {
-    "password": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "password": "bcrypt$$2b$12$ipSEa2bH2kMv2hQemMNGb.FFzdpj5L6yK8LuQPKZGedXvF/nk8sJ6",
     "role": "admin",
     "display_name": "Admin User",
     "created_at": "2025-10-20T01:01:35.487829",
-    "last_login": "2025-10-20T12:30:02.168339"
+    "last_login": "2025-10-20T01:01:55.744850"
   },
   "Hema": {
     "password": "b7f7093b4ee0803ae035c6e1d99fd198d781b18fa0b528d5c5cb5424dde8afd2",
@@ -12,5 +12,12 @@
     "display_name": "Hema Koteswar Naidu",
     "created_at": "2025-10-20T01:46:46.055909",
     "last_login": "2025-10-20T11:58:48.155274"
+  },
+  "testuser123": {
+    "password": "bcrypt$$2b$12$dDrbtao9XwQqXewVCCQMgOMW0BzjfuwVrYNcmxk7LMoHL92RXB9Uy",
+    "role": "user",
+    "display_name": "Test User",
+    "created_at": "2025-10-20T01:01:55.528777",
+    "last_login": null
   }
 }

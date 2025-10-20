@@ -25,8 +25,17 @@ from auth_system import auth_system, require_login, require_permission
 # Import high-speed transfer module
 from high_speed_transfer import HighSpeedTransfer
 
+# Import logging system
+from logger import ApplicationLogger, SecurityLogger, AuditLogger, PerformanceLogger
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Secret key for sessions
+
+# Initialize loggers
+app_logger = ApplicationLogger()
+security_logger = SecurityLogger()
+audit_logger = AuditLogger()
+performance_logger = PerformanceLogger()
 
 # Initialize high-speed transfer
 high_speed = None  # Will be initialized after app config

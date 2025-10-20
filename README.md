@@ -2,6 +2,44 @@
 
 A professional, high-performance file sharing application with maximum transfer speeds and advanced features. Works seamlessly across Windows, macOS, iPhone, and Android devices on the same WiFi network.
 
+**🎉 NEW: Now available as standalone desktop applications for Windows and macOS!**
+
+## 🚀 Quick Start
+
+### Option 1: Desktop Application (Recommended)
+
+**Windows:**
+```bash
+start.bat
+```
+Or double-click `start.bat` to install and run automatically!
+
+**macOS/Linux:**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+**Default Login:**
+- Username: `admin`
+- Password: `admin123`
+
+### Option 2: Build Standalone Apps
+
+**Windows (.exe):**
+```powershell
+.\build_windows_app.ps1
+```
+
+**macOS (.app):**
+```bash
+./build_macos_app_v2.sh
+```
+
+📖 **Full Guide:** See [DESKTOP_APP_GUIDE.md](DESKTOP_APP_GUIDE.md) for complete instructions
+
+---
+
 ## ✨ Key Features
 
 ### 🚀 Performance & Speed

@@ -5,12 +5,12 @@ Handles user management, sessions, roles, and permissions
 
 import json
 import os
-import hashlib
 import secrets
 import time
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import session, request, jsonify
+from security import PasswordHasher, PasswordValidator, UsernameValidator
 
 # Database files
 USERS_DB = 'data/users.json'
@@ -38,6 +38,9 @@ PERMISSIONS = {
 
 class AuthSystem:
     def __init__(self):
+        self.password_hasher = PasswordHasher()
+        self.password_validator = PasswordValidator()
+        self.username_validator = UsernameValidator()
         self.load_databases()
     
     def load_databases(self):
@@ -67,10 +70,6 @@ class AuthSystem:
         with open(filepath, 'w') as f:
             json.dump(data, f, indent=2)
     
-    def hash_password(self, password):
-        """Hash password using SHA-256"""
-        return hashlib.sha256(password.encode()).hexdigest()
-    
     def create_user(self, username, password, role='user', display_name=''):
         """Create a new user"""
         if username in self.users:
@@ -79,8 +78,19 @@ class AuthSystem:
         if role not in ROLES:
             return False, "Invalid role"
         
+        # Validate username
+        is_valid, error_msg = self.username_validator.validate_username(username)
+        if not is_valid:
+            return False, error_msg
+        
+        # Validate password (skip for default admin)
+        if username != 'admin':
+            is_valid, error_msg = self.password_validator.validate_password(password)
+            if not is_valid:
+                return False, error_msg
+        
         self.users[username] = {
-            'password': self.hash_password(password),
+            'password': self.password_hasher.hash_password(password),
             'role': role,
             'display_name': display_name or username,
             'created_at': datetime.now().isoformat(),
@@ -95,8 +105,17 @@ class AuthSystem:
             return False, None, "Invalid username or password"
         
         user = self.users[username]
-        if user['password'] != self.hash_password(password):
+        
+        # Verify password using secure hasher
+        if not self.password_hasher.verify_password(password, user['password']):
             return False, None, "Invalid username or password"
+        
+        # Auto-migrate old SHA-256 hashes to bcrypt
+        if user['password'].startswith('$2b$') == False and len(user['password']) == 64:
+            # This is an old SHA-256 hash, upgrade it
+            user['password'] = self.password_hasher.hash_password(password)
+            self.users[username] = user
+            self._save_json(USERS_DB, self.users)
         
         # Create session token
         session_token = secrets.token_urlsafe(32)

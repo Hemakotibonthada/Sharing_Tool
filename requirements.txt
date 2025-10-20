@@ -1,6 +1,56 @@
+# Core Framework
 Flask==3.0.0
+Werkzeug==3.0.1
+
+# File Handling
 qrcode==7.4.2
 Pillow==10.1.0
-Werkzeug==3.0.1
+
+# WebSocket Support
 flask-socketio==5.5.1
 eventlet==0.40.3
+
+# Security Enhancements
+bcrypt==4.1.2
+Flask-Limiter==3.5.0
+Flask-WTF==1.2.1
+Flask-Talisman==1.1.0
+
+# Performance & Caching
+Flask-Caching==2.1.0
+Flask-Compress==1.14
+redis==5.0.1
+
+# Validation
+marshmallow==3.20.1
+
+# Database (for future migration)
+SQLAlchemy==2.0.23
+Flask-SQLAlchemy==3.1.1
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-flask==1.3.0
+
+# Background Tasks
+celery==5.3.4
+
+# Monitoring
+prometheus-flask-exporter==0.23.0
+
+# Email
+Flask-Mail==0.9.1
+
+# Documentation
+flasgger==0.9.7.1
+
+# Utilities
+python-dotenv==1.0.0
+click==8.1.7
+
+# Desktop Application (optional)
+pyinstaller==6.3.0
+pywebview==4.4.1
+PyQt5==5.15.10
+PyQtWebEngine==5.15.6

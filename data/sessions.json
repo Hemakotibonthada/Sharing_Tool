@@ -40,5 +40,12 @@
     "display_name": "Admin User",
     "created_at": "2025-10-20T12:30:02.167575",
     "expires_at": "2025-10-27T12:30:02.167606"
+  },
+  "Lw7bAI2PuRE-VNrjwGR0jN-Uo1P6Hb0UqtnuiD3XjmU": {
+    "username": "admin",
+    "role": "admin",
+    "display_name": "Admin User",
+    "created_at": "2025-10-20T01:01:55.743698",
+    "expires_at": "2025-10-27T01:01:55.743709"
   }
 }
