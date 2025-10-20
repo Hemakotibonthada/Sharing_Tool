@@ -6,13 +6,21 @@ A professional, high-performance file sharing application with maximum transfer 
 
 ## 🚀 Quick Start
 
-### Option 1: Desktop Application (Recommended)
+### Option 1: Easy Startup (Recommended)
 
-**Windows:**
+**Windows - With Automatic Firewall Configuration:**
 ```bash
-start.bat
+# Right-click and "Run as Administrator"
+START_SERVER.bat
+
+# Or use PowerShell (auto-elevates)
+START_SERVER.ps1
 ```
-Or double-click `start.bat` to install and run automatically!
+
+**Manual Python Start:**
+```bash
+python start_server.py
+```
 
 **macOS/Linux:**
 ```bash
@@ -23,6 +31,13 @@ chmod +x start.sh
 **Default Login:**
 - Username: `admin`
 - Password: `admin123`
+
+**🌐 Network Access:**
+- Local: `http://localhost:5001`
+- Network: Use the IP address shown when server starts
+- Mobile: Scan the QR code in the Network tab
+
+**⚠️ Can't connect from other devices?** See [NETWORK_TROUBLESHOOTING.md](NETWORK_TROUBLESHOOTING.md)
 
 ### Option 2: Build Standalone Apps
 

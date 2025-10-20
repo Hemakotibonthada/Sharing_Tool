@@ -220,6 +220,13 @@ function setupEventListeners() {
     const filePermission = document.getElementById('filePermission');
     const restrictedUsersDiv = document.getElementById('restrictedUsersDiv');
 
+    // Debug logging
+    console.log('Setting up event listeners...');
+    console.log('dropArea:', dropArea);
+    console.log('fileInput:', fileInput);
+    console.log('uploadQueue element:', document.getElementById('uploadQueue'));
+    console.log('uploadItems element:', document.getElementById('uploadItems'));
+
     // Permission selector change
     if (filePermission) {
         filePermission.addEventListener('change', (e) => {
@@ -389,7 +396,9 @@ function handleDrop(e) {
 
 // Handle file upload with parallel processing
 function handleFiles(e) {
+    console.log('handleFiles called with:', e);
     const files = e.target.files;
+    console.log('Files to upload:', files.length);
     
     if (files.length === 0) return;
 
@@ -397,11 +406,19 @@ function handleFiles(e) {
     const permission = document.getElementById('filePermission')?.value || 'public';
     const allowedUsers = document.getElementById('restrictedUsers')?.value || '';
     
-    document.getElementById('uploadQueue').style.display = 'block';
+    const uploadQueueDiv = document.getElementById('uploadQueue');
+    console.log('uploadQueue div:', uploadQueueDiv);
+    if (uploadQueueDiv) {
+        uploadQueueDiv.style.display = 'block';
+        console.log('Upload queue shown');
+    } else {
+        console.error('Upload queue div not found!');
+    }
     
     // Add all files to queue with permission data
     Array.from(files).forEach((file, index) => {
         const uploadId = Date.now() + index;
+        console.log('Adding file to queue:', file.name, uploadId);
         uploadQueue.push({ 
             file, 
             uploadId,
@@ -410,6 +427,7 @@ function handleFiles(e) {
         });
     });
     
+    console.log('Total files in uploadQueue:', uploadQueue.length);
     // Process queue with parallel uploads
     processUploadQueue();
     
@@ -418,17 +436,30 @@ function handleFiles(e) {
 }
 
 function processUploadQueue() {
+    console.log('processUploadQueue called. Queue length:', uploadQueue.length, 'Active uploads:', activeUploads.length);
     // Start parallel uploads up to MAX_PARALLEL_UPLOADS
     while (uploadQueue.length > 0 && activeUploads.length < MAX_PARALLEL_UPLOADS) {
         const queueItem = uploadQueue.shift();
+        console.log('Processing upload for:', queueItem.file.name);
         uploadFile(queueItem.file, queueItem.uploadId, 0, queueItem.permission, queueItem.allowedUsers);
     }
 }
 
 function uploadFile(file, uploadId, resumeOffset = 0, permission = 'public', allowedUsers = '') {
-    // Use high-speed WebSocket transfer
+    console.log('uploadFile called for:', file.name, 'uploadId:', uploadId);
+    
+    // Create upload item UI
     const uploadItem = createUploadItem(file, uploadId);
-    document.getElementById('uploadItems').appendChild(uploadItem);
+    const uploadItemsDiv = document.getElementById('uploadItems');
+    console.log('uploadItems div:', uploadItemsDiv);
+    console.log('Created upload item:', uploadItem);
+    
+    if (uploadItemsDiv) {
+        uploadItemsDiv.appendChild(uploadItem);
+        console.log('Upload item appended to DOM');
+    } else {
+        console.error('uploadItems div not found!');
+    }
     
     // Show immediate "preparing" status
     updateUploadProgress(uploadId, 0, 0);
@@ -437,37 +468,48 @@ function uploadFile(file, uploadId, resumeOffset = 0, permission = 'public', all
     
     activeUploads.push(uploadId);
     
-    highSpeedTransfer.uploadFile(file, {
-        permission: permission,
-        allowedUsers: allowedUsers,
-        onProgress: (data) => {
-            updateUploadProgress(uploadId, data.progress, data.speed_mbps * 1000000 / 8); // Convert Mbps to bytes/sec
-        }
-    }).then((result) => {
-        // Upload complete
-        activeUploads = activeUploads.filter(id => id !== uploadId);
+    // Try high-speed WebSocket transfer if available
+    if (highSpeedTransfer && typeof highSpeedTransfer.uploadFile === 'function') {
+        console.log('Attempting high-speed upload for:', file.name);
         
-        showToast(`${file.name} uploaded at ${result.speed_mbps.toFixed(2)} Mbps`, 'success');
-        completeUpload(uploadId);
-        
-        setTimeout(() => {
-            uploadItem.remove();
-            loadFiles();
-            updateStats();
-            processUploadQueue();
-        }, 1000);
-        
-    }).catch((error) => {
-        console.error('High-speed upload failed, trying regular HTTP upload:', error);
-        
-        // Fallback to regular HTTP upload with permission data
+        highSpeedTransfer.uploadFile(file, {
+            permission: permission,
+            allowedUsers: allowedUsers,
+            onProgress: (data) => {
+                updateUploadProgress(uploadId, data.progress, data.speed_mbps * 1000000 / 8); // Convert Mbps to bytes/sec
+            }
+        }).then((result) => {
+            // Upload complete
+            activeUploads = activeUploads.filter(id => id !== uploadId);
+            
+            showToast(`${file.name} uploaded at ${result.speed_mbps.toFixed(2)} Mbps`, 'success');
+            completeUpload(uploadId);
+            
+            setTimeout(() => {
+                uploadItem.remove();
+                loadFiles();
+                updateStats();
+                processUploadQueue();
+            }, 1000);
+            
+        }).catch((error) => {
+            console.error('High-speed upload failed, trying regular HTTP upload:', error);
+            
+            // Fallback to regular HTTP upload with permission data
+            uploadFileHTTP(file, uploadId, resumeOffset, permission, allowedUsers);
+        });
+    } else {
+        // Use HTTP upload directly if high-speed not available
+        console.log('High-speed transfer not available, using HTTP upload for:', file.name);
         uploadFileHTTP(file, uploadId, resumeOffset, permission, allowedUsers);
-    });
+    }
 }
 
 // Fallback HTTP upload function for Mac compatibility
 function uploadFileHTTP(file, uploadId, resumeOffset = 0, permission = 'public', allowedUsers = '') {
     console.log('Using regular HTTP upload for:', file.name);
+    
+    const startTime = Date.now(); // Define startTime BEFORE xhr setup
     
     // Show immediate "uploading" status
     const speedText = document.getElementById(`upload-speed-${uploadId}`);
@@ -488,8 +530,6 @@ function uploadFileHTTP(file, uploadId, resumeOffset = 0, permission = 'public',
             updateUploadProgress(uploadId, progress, speed);
         }
     });
-    
-    const startTime = Date.now();
     
     xhr.onload = function() {
         if (xhr.status === 200) {
@@ -1902,3 +1942,10 @@ function formatTimestamp(timestamp) {
     // More than 24 hours
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 }
+
+// Export functions for use in other scripts
+window.handleFiles = handleFiles;
+window.uploadFile = uploadFile;
+window.uploadFileHTTP = uploadFileHTTP;
+window.processUploadQueue = processUploadQueue;
+window.loadFiles = loadFiles;

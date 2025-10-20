@@ -113,15 +113,15 @@ function handleDrop(e) {
     const dt = e.dataTransfer;
     const files = dt.files;
     
-    handleFiles(files);
+    handleFileManagerFiles(files);
 }
 
 function handleFileInputChange(e) {
     const files = e.target.files;
-    handleFiles(files);
+    handleFileManagerFiles(files);
 }
 
-function handleFiles(files) {
+function handleFileManagerFiles(files) {
     if (!files || files.length === 0) return;
     
     console.log(`Processing ${files.length} file(s)...`);
@@ -132,13 +132,27 @@ function handleFiles(files) {
         uploadQueue.style.display = 'block';
     }
     
-    // Process each file
-    Array.from(files).forEach(file => {
-        uploadFileWithProgress(file);
-    });
+    // Get permission settings
+    const permission = document.getElementById('filePermission')?.value || 'public';
+    const allowedUsers = document.getElementById('restrictedUsers')?.value || '';
     
-    // Navigate to upload section
-    navigateToSection('upload');
+    // Use the existing handleFiles function from script.js if available
+    if (typeof window.handleFiles === 'function') {
+        // Create fake event object with files
+        window.handleFiles({ target: { files: files } });
+    } else {
+        // Fallback: trigger the file input change event
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            const dataTransfer = new DataTransfer();
+            Array.from(files).forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+            
+            // Trigger change event
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
+    }
 }
 
 // ==================== VIEW TOGGLE ====================
