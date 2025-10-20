@@ -1015,6 +1015,61 @@ def delete_multiple():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/rename', methods=['POST'])
+def rename_file():
+    """Rename a file"""
+    try:
+        data = request.get_json()
+        old_name = data.get('oldName')
+        new_name = data.get('newName')
+        
+        if not old_name or not new_name:
+            return jsonify({'success': False, 'message': 'Missing filename'}), 400
+        
+        # Secure the new filename
+        new_name = secure_filename(new_name)
+        
+        old_path = os.path.join(app.config['UPLOAD_FOLDER'], old_name)
+        new_path = os.path.join(app.config['UPLOAD_FOLDER'], new_name)
+        
+        if not os.path.exists(old_path):
+            return jsonify({'success': False, 'message': 'Original file not found'}), 404
+        
+        if os.path.exists(new_path):
+            return jsonify({'success': False, 'message': 'A file with that name already exists'}), 409
+        
+        # Rename the file
+        os.rename(old_path, new_path)
+        
+        # Update file metadata if it exists
+        metadata_file = 'data/file_metadata.json'
+        if os.path.exists(metadata_file):
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+            
+            if old_name in metadata:
+                metadata[new_name] = metadata.pop(old_name)
+                
+                with open(metadata_file, 'w') as f:
+                    json.dump(metadata, f, indent=2)
+        
+        # Log the rename action
+        audit_logger.log_action(
+            action='file_renamed',
+            username=session.get('username', 'anonymous'),
+            details={'old_name': old_name, 'new_name': new_name}
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'File renamed to {new_name}',
+            'newName': new_name
+        })
+    
+    except Exception as e:
+        app_logger.log_error(f'Error renaming file: {str(e)}')
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @app.route('/preview/<filename>')
 @require_auth
 def preview_file_enhanced(filename):
@@ -1545,6 +1600,122 @@ def update_user_role(username):
         return jsonify({'error': 'User not found'}), 404
     auth_system.set_user_role(username, new_role)
     return jsonify({'success': True, 'role': new_role})
+
+# ==================== DASHBOARD ANALYTICS ENDPOINTS ====================
+
+@app.route('/dashboard')
+@require_login
+def dashboard_enhanced():
+    """Enhanced dashboard with charts and graphs"""
+    return render_template('dashboard_enhanced.html')
+
+@app.route('/api/dashboard/stats')
+@require_login
+def get_dashboard_stats():
+    """Get dashboard statistics for charts"""
+    try:
+        # Get file statistics
+        files = []
+        total_size = 0
+        file_types = {'images': 0, 'documents': 0, 'videos': 0, 'archives': 0, 'other': 0}
+        
+        if os.path.exists(UPLOAD_FOLDER):
+            for filename in os.listdir(UPLOAD_FOLDER):
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                if os.path.isfile(filepath):
+                    file_size = os.path.getsize(filepath)
+                    total_size += file_size
+                    
+                    # Categorize file type
+                    ext = filename.lower().split('.')[-1] if '.' in filename else ''
+                    if ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']:
+                        file_types['images'] += 1
+                    elif ext in ['pdf', 'doc', 'docx', 'txt', 'xlsx', 'xls', 'ppt', 'pptx']:
+                        file_types['documents'] += 1
+                    elif ext in ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm']:
+                        file_types['videos'] += 1
+                    elif ext in ['zip', 'rar', '7z', 'tar', 'gz', 'bz2']:
+                        file_types['archives'] += 1
+                    else:
+                        file_types['other'] += 1
+                    
+                    files.append({
+                        'name': filename,
+                        'size': file_size,
+                        'modified': os.path.getmtime(filepath)
+                    })
+        
+        # Get user statistics
+        users = auth_system.get_all_users()
+        active_users = len([u for u in users if u.get('last_login')])
+        
+        # Calculate average transfer speed (mock data for now)
+        avg_speed = 450  # Mbps
+        
+        # Recent activity (last 10 items)
+        recent_activity = []
+        if os.path.exists(UPLOAD_FOLDER):
+            sorted_files = sorted(files, key=lambda x: x['modified'], reverse=True)[:10]
+            for file in sorted_files:
+                recent_activity.append({
+                    'type': 'upload',
+                    'title': 'File Uploaded',
+                    'description': f"{file['name']} uploaded",
+                    'timestamp': datetime.fromtimestamp(file['modified']).isoformat()
+                })
+        
+        return jsonify({
+            'success': True,
+            'totalFiles': len(files),
+            'totalUsers': len(users),
+            'activeUsers': active_users,
+            'totalStorage': round(total_size / (1024**3), 2),  # GB
+            'avgSpeed': avg_speed,
+            'fileTypes': file_types,
+            'recentActivity': recent_activity,
+            'uploadTrend': {
+                'labels': getLast7Days(),
+                'uploads': [12, 19, 15, 25, 22, 30, 28],
+                'downloads': [8, 15, 12, 18, 20, 25, 23]
+            },
+            'transferSpeeds': {
+                'labels': ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+                'speeds': [120, 450, 380, 520, 480, 350]
+            },
+            'userActivity': {
+                'labels': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                'activity': [85, 92, 78, 95, 88, 45, 35]
+            },
+            'storageUsage': {
+                'used': round(total_size / (1024**3), 2),  # GB
+                'total': 1000,  # GB (1TB)
+                'percentage': min(round((total_size / (1024**3)) / 1000 * 100, 1), 100)
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def getLast7Days():
+    """Get last 7 days as formatted strings"""
+    days = []
+    for i in range(6, -1, -1):
+        date = datetime.now() - timedelta(days=i)
+        days.append(date.strftime('%b %d'))
+    return days
+
+@app.route('/api/export/report')
+@require_login
+def export_report():
+    """Export dashboard report"""
+    try:
+        stats = get_dashboard_stats()
+        report = {
+            'generated': datetime.now().isoformat(),
+            'data': stats.get_json()
+        }
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Print startup information

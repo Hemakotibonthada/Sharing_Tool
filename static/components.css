@@ -1,0 +1,755 @@
+/**
+ * Modern UI Components - Loading Skeletons and Progress Indicators
+ * NetShare Pro - Circuvent Technologies
+ */
+
+/* ==================== LOADING SKELETONS ==================== */
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    animation: shimmerGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmerGlow {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Skeleton Variants */
+
+.skeleton-card {
+    width: 100%;
+    height: 300px;
+    margin-bottom: 1rem;
+}
+
+.skeleton-text {
+    width: 100%;
+    height: 20px;
+    margin-bottom: 0.75rem;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+.skeleton-text.medium {
+    width: 80%;
+}
+
+.skeleton-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+}
+
+.skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.skeleton-button {
+    width: 120px;
+    height: 40px;
+}
+
+/* File Card Skeleton */
+.skeleton-file-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+    border-radius: 12px;
+}
+
+.skeleton-file-preview {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.05)
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+/* Dashboard Skeleton */
+.skeleton-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+    border-radius: 12px;
+}
+
+/* ==================== PROGRESS INDICATORS ==================== */
+
+/* Linear Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 100px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 100px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Progress Bar Variants */
+.progress-bar.sm {
+    height: 4px;
+}
+
+.progress-bar.md {
+    height: 8px;
+}
+
+.progress-bar.lg {
+    height: 12px;
+}
+
+.progress-bar.xl {
+    height: 16px;
+}
+
+/* Success Progress */
+.progress-bar-fill.success {
+    background: linear-gradient(90deg, #43e97b, #38f9d7);
+}
+
+/* Warning Progress */
+.progress-bar-fill.warning {
+    background: linear-gradient(90deg, #f093fb, #f5576c);
+}
+
+/* Danger Progress */
+.progress-bar-fill.danger {
+    background: linear-gradient(90deg, #ff6b6b, #ee5a6f);
+}
+
+/* Info Progress */
+.progress-bar-fill.info {
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+}
+
+/* Indeterminate Progress */
+.progress-bar-indeterminate {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-indeterminate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 50%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 100px;
+    animation: indeterminateProgress 1.5s ease-in-out infinite;
+}
+
+@keyframes indeterminateProgress {
+    0% {
+        left: -50%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* ==================== CIRCULAR PROGRESS ==================== */
+
+.circular-progress {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(
+        #667eea 0deg,
+        #764ba2 var(--progress-angle, 180deg),
+        rgba(0, 0, 0, 0.2) var(--progress-angle, 180deg)
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.circular-progress::before {
+    content: '';
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--bg-primary, #1a1d2e);
+}
+
+.circular-progress-text {
+    position: relative;
+    z-index: 1;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary, #e2e8f0);
+}
+
+/* Circular Progress Sizes */
+.circular-progress.sm {
+    width: 60px;
+    height: 60px;
+}
+
+.circular-progress.sm::before {
+    width: 45px;
+    height: 45px;
+}
+
+.circular-progress.sm .circular-progress-text {
+    font-size: 0.9rem;
+}
+
+.circular-progress.lg {
+    width: 180px;
+    height: 180px;
+}
+
+.circular-progress.lg::before {
+    width: 150px;
+    height: 150px;
+}
+
+.circular-progress.lg .circular-progress-text {
+    font-size: 2rem;
+}
+
+/* ==================== SPINNER LOADERS ==================== */
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--color-primary, #667eea);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spinner.sm {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+.spinner.lg {
+    width: 60px;
+    height: 60px;
+    border-width: 6px;
+}
+
+/* Dot Spinner */
+.dot-spinner {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dot-spinner span {
+    width: 12px;
+    height: 12px;
+    background: var(--color-primary, #667eea);
+    border-radius: 50%;
+    animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.dot-spinner span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.dot-spinner span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes dotBounce {
+    0%,
+    80%,
+    100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Pulse Loader */
+.pulse-loader {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-primary, #667eea);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.5;
+    }
+}
+
+/* ==================== UPLOAD PROGRESS CARDS ==================== */
+
+.upload-progress-card {
+    background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.upload-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.upload-file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.upload-file-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 1.2rem;
+}
+
+.upload-file-details h4 {
+    font-size: 0.9rem;
+    color: var(--text-primary, #e2e8f0);
+    margin: 0 0 0.25rem 0;
+}
+
+.upload-file-details p {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a0aec0);
+    margin: 0;
+}
+
+.upload-progress-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.upload-progress-body {
+    margin-top: 1rem;
+}
+
+.upload-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0aec0);
+}
+
+.upload-speed {
+    color: var(--color-primary, #667eea);
+    font-weight: 600;
+}
+
+/* ==================== LOADING OVERLAYS ==================== */
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-primary, #e2e8f0);
+}
+
+.loading-content .spinner {
+    margin: 0 auto 1rem;
+}
+
+.loading-content h3 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.loading-content p {
+    color: var(--text-secondary, #a0aec0);
+    font-size: 0.9rem;
+}
+
+/* ==================== PLACEHOLDER STATES ==================== */
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary, #a0aec0);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary, #e2e8f0);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state .hint {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* ==================== SKELETON CONTAINERS ==================== */
+
+.skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+/* ==================== ANIMATED PLACEHOLDERS ==================== */
+
+.placeholder-wave {
+    animation: wave 2s linear infinite;
+}
+
+@keyframes wave {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.placeholder-glow {
+    animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+    }
+}
+
+/* ==================== STEP PROGRESS ==================== */
+
+.step-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem 0;
+    position: relative;
+}
+
+.step-progress::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary, #a0aec0);
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-circle {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #667eea;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+}
+
+.step.completed .step-circle {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    border-color: #43e97b;
+    color: #ffffff;
+}
+
+.step-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #a0aec0);
+}
+
+.step.active .step-label {
+    color: var(--color-primary, #667eea);
+    font-weight: 600;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    .circular-progress {
+        width: 80px;
+        height: 80px;
+    }
+
+    .circular-progress::before {
+        width: 60px;
+        height: 60px;
+    }
+
+    .circular-progress-text {
+        font-size: 1rem;
+    }
+
+    .upload-progress-card {
+        padding: 0.75rem;
+    }
+
+    .upload-file-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .step-progress {
+        margin: 1rem 0;
+    }
+
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+
+    .step-label {
+        font-size: 0.75rem;
+    }
+
+    .skeleton-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+
+.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.blur-loading {
+    filter: blur(2px);
+    pointer-events: none;
+}
+
+.disabled-state {
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+}
+
+.fadeIn {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.slideUp {
+    animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.scaleIn {
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
