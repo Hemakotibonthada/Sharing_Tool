@@ -571,25 +571,22 @@ function uploadFileHTTP(file, uploadId, resumeOffset = 0, permission = 'public',
     });
     
     xhr.onload = function() {
-        console.log('Upload completed. Status:', xhr.status, 'Response:', xhr.responseText.substring(0, 200));
-        
         if (xhr.status === 200) {
             const elapsed = (Date.now() - startTime) / 1000;
             const speedMbps = (file.size * 8) / (elapsed * 1000000);
             
             activeUploads = activeUploads.filter(id => id !== uploadId);
-            showToast(`${file.name} uploaded successfully!`, 'success');
+            showToast(`${file.name} uploaded at ${speedMbps.toFixed(2)} Mbps (HTTP)`, 'success');
             completeUpload(uploadId);
             
             setTimeout(() => {
                 document.getElementById(`upload-${uploadId}`)?.remove();
-                console.log('Reloading files list after upload...');
                 loadFiles();
                 updateStats();
                 processUploadQueue();
             }, 1000);
         } else {
-            console.error('HTTP upload failed. Status:', xhr.status, 'Response:', xhr.responseText);
+            console.error('HTTP upload failed:', xhr.responseText);
             showToast(`Upload failed: ${file.name}`, 'error');
             failUpload(uploadId);
             activeUploads = activeUploads.filter(id => id !== uploadId);
@@ -672,27 +669,14 @@ function failUpload(uploadId, resumable = false) {
 
 // Load files from server
 async function loadFiles() {
-    console.log('Loading files... authToken:', authToken ? 'Present' : 'Missing');
     try {
         const headers = {};
         if (authToken) {
             headers['Authorization'] = `Bearer ${authToken}`;
         }
         
-        console.log('Fetching /files with headers:', headers);
         const response = await fetch('/files', { headers });
-        console.log('Response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            console.error('Failed to load files. Response:', await response.text());
-            showToast('Failed to load files', 'error');
-            return;
-        }
-        
         allFiles = await response.json();
-        console.log('Files loaded:', allFiles.length, 'files');
-        console.log('First 3 files:', allFiles.slice(0, 3));
-        
         renderFiles();
         loadRecentFiles();
     } catch (error) {
@@ -704,12 +688,10 @@ async function loadFiles() {
 // Render files
 function renderFiles() {
     let files = [...allFiles];
-    console.log('renderFiles called. Total files:', allFiles.length, 'Filter:', currentFilter);
     
     // Apply filter
     if (currentFilter !== 'all') {
         files = files.filter(file => matchesFilter(file, currentFilter));
-        console.log('After filter:', files.length, 'files');
     }
     
     // Apply sort
@@ -717,15 +699,11 @@ function renderFiles() {
     
     const filesGrid = document.getElementById('filesGrid');
     const emptyState = document.getElementById('emptyState');
-    
-    console.log('filesGrid element:', filesGrid, 'emptyState:', emptyState);
 
     if (files.length === 0) {
-        console.log('No files to display. Showing empty state.');
         filesGrid.style.display = 'none';
         emptyState.style.display = 'block';
     } else {
-        console.log('Displaying', files.length, 'files in grid');
         filesGrid.style.display = 'grid';
         emptyState.style.display = 'none';
         
