@@ -20,12 +20,23 @@ let authToken = null;  // Authentication token
 let highSpeedTransfer = null;  // High-speed transfer instance
 
 // Initialize
+// Initialize - with flag to prevent multiple initializations
+let appInitialized = false;
+
 document.addEventListener('DOMContentLoaded', function() {
     // Only run main app initialization if NOT on login page
     if (window.location.pathname === '/login') {
         console.log('On login page, skipping main app initialization');
         return;
     }
+    
+    // Prevent multiple initializations
+    if (appInitialized) {
+        console.log('App already initialized, skipping duplicate initialization');
+        return;
+    }
+    appInitialized = true;
+    console.log('Starting app initialization...');
     
     // Initialize high-speed transfer system
     if (typeof HighSpeedTransfer !== 'undefined') {
@@ -36,11 +47,11 @@ document.addEventListener('DOMContentLoaded', function() {
     initParticles();
     initSidebar();
     initNavigation();
-    checkAuthStatus();  // Check if user is logged in (this will call loadFiles after auth)
+    checkAuthStatus();  // Check if user is logged in (this will call loadFiles and updateStats after auth)
     // loadFiles(); // Don't call here - will be called after authentication
     setupEventListeners();
-    updateStats();
-    updateTransferStatus();
+    // updateStats(); // Don't call here - will be called after authentication
+    // updateTransferStatus(); // Don't call here - will be called after authentication
     setInterval(updateStats, 10000); // Update stats every 10 seconds (reduced from 5)
     setInterval(updateTransferStatus, 5000); // Update transfer status every 5 seconds (reduced from 2)
     scanDevices();
@@ -96,9 +107,12 @@ async function checkAuthStatus() {
             currentUser = await response.json();
             showUserProfile();
             updateUIForUser();
-            // Reload files after successful authentication
-            console.log('Authentication successful, loading files...');
+            // Reload files and stats after successful authentication
+            console.log('Authentication successful, loading files and stats...');
             await loadFiles();
+            await updateStats();
+            await updateTransferStatus();
+            console.log('Initial data load complete');
         } else {
             // Token expired or invalid
             localStorage.removeItem('authToken');
@@ -929,13 +943,21 @@ async function loadRecentFiles() {
 // Update statistics
 async function updateStats() {
     try {
-        const response = await fetch('/stats');
+        const headers = {};
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/stats', { headers });
         const stats = await response.json();
         
+        // Update dashboard stats
         document.getElementById('statTotalFiles').textContent = stats.total_files;
         document.getElementById('statTotalSize').textContent = formatFileSize(stats.total_size);
         document.getElementById('statUploads').textContent = stats.total_uploads;
         document.getElementById('statDownloads').textContent = stats.total_downloads;
+        
+        console.log(`Stats updated: ${stats.total_files} files, ${formatFileSize(stats.total_size)} total`);
     } catch (error) {
         console.error('Error updating stats:', error);
     }

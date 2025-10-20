@@ -956,15 +956,28 @@ def delete_file(filename):
 
 @app.route('/stats')
 def get_stats():
-    """Get server statistics"""
-    total_files = len([f for f in os.listdir(app.config['UPLOAD_FOLDER']) 
-                       if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f))])
-    total_size = sum(os.path.getsize(os.path.join(app.config['UPLOAD_FOLDER'], f)) 
-                     for f in os.listdir(app.config['UPLOAD_FOLDER']) 
-                     if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f)))
+    """Get server statistics with user permission filtering"""
+    # Get current user if authenticated
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    user_session = auth_system.validate_session(token)
+    current_username = user_session['username'] if user_session else None
+    
+    # Count only files the user can access
+    accessible_files = []
+    total_size = 0
+    
+    for filename in os.listdir(app.config['UPLOAD_FOLDER']):
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if os.path.isfile(filepath):
+            # Check if user can access this file
+            if current_username and not auth_system.can_access_file(filename, current_username):
+                continue  # Skip files user can't access
+            
+            accessible_files.append(filename)
+            total_size += os.path.getsize(filepath)
     
     return jsonify({
-        'total_files': total_files,
+        'total_files': len(accessible_files),
         'total_size': total_size,
         'total_uploads': stats.get('total_uploads', 0),
         'total_downloads': stats.get('total_downloads', 0),
