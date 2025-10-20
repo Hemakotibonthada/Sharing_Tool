@@ -36,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initParticles();
     initSidebar();
     initNavigation();
-    checkAuthStatus();  // Check if user is logged in
-    loadFiles();
+    checkAuthStatus();  // Check if user is logged in (this will call loadFiles after auth)
+    // loadFiles(); // Don't call here - will be called after authentication
     setupEventListeners();
     updateStats();
     updateTransferStatus();
@@ -96,6 +96,9 @@ async function checkAuthStatus() {
             currentUser = await response.json();
             showUserProfile();
             updateUIForUser();
+            // Reload files after successful authentication
+            console.log('Authentication successful, loading files...');
+            await loadFiles();
         } else {
             // Token expired or invalid
             localStorage.removeItem('authToken');
@@ -602,12 +605,17 @@ function uploadFileHTTP(file, uploadId, resumeOffset = 0, permission = 'public',
         processUploadQueue();
     };
     
-    // Add auth header if available
+    // Open connection first
+    xhr.open('POST', '/upload', true);
+    
+    // Add auth header if available (must be after open)
     if (authToken) {
         xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+        console.log('Added auth header to upload request');
+    } else {
+        console.warn('No auth token available for upload');
     }
     
-    xhr.open('POST', '/upload', true);
     xhr.send(formData);
 }
 
@@ -670,13 +678,29 @@ function failUpload(uploadId, resumable = false) {
 // Load files from server
 async function loadFiles() {
     try {
+        console.log('Loading files...');
         const headers = {};
         if (authToken) {
             headers['Authorization'] = `Bearer ${authToken}`;
+            console.log('Using auth token for file loading');
+        } else {
+            console.warn('No auth token available, files may not load');
         }
         
         const response = await fetch('/files', { headers });
+        
+        if (!response.ok) {
+            console.error('Failed to load files, status:', response.status);
+            if (response.status === 401) {
+                console.warn('Unauthorized - redirecting to login');
+                showLoginButton();
+                return;
+            }
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         allFiles = await response.json();
+        console.log(`Loaded ${allFiles.length} files successfully`);
         renderFiles();
         loadRecentFiles();
     } catch (error) {
