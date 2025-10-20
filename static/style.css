@@ -2195,3 +2195,521 @@ body {
         transform: translateY(0);
     }
 }
+
+/* ============================================
+   ENHANCED MOBILE RESPONSIVE DESIGN
+   ============================================ */
+
+/* Mobile First - Base styles for mobile */
+@media (max-width: 480px) {
+    /* Sidebar adjustments for mobile */
+    .sidebar {
+        width: 280px;
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    /* Header adjustments */
+    .header {
+        padding: 15px;
+    }
+    
+    .header h1 {
+        font-size: 18px;
+    }
+    
+    .search-bar {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .header-actions {
+        gap: 8px;
+    }
+    
+    .btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+    
+    /* Stats grid for mobile */
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .stat-card {
+        padding: 15px;
+    }
+    
+    /* Upload area for mobile */
+    .upload-section {
+        padding: 15px;
+    }
+    
+    .drop-area {
+        padding: 30px 15px;
+        min-height: 200px;
+    }
+    
+    .drop-area i {
+        font-size: 48px;
+    }
+    
+    .drop-area h3 {
+        font-size: 16px;
+    }
+    
+    /* File grid for mobile */
+    .files-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .file-card {
+        padding: 12px;
+    }
+    
+    .file-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .file-actions .btn {
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+    
+    /* Upload queue for mobile */
+    .upload-queue {
+        max-height: 200px;
+    }
+    
+    .upload-item {
+        padding: 10px;
+    }
+    
+    /* Modals for mobile */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        margin: 10px;
+        padding: 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 18px;
+    }
+    
+    /* Forms for mobile */
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Buttons stack on mobile */
+    .modal-footer {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .modal-footer .btn {
+        width: 100%;
+    }
+    
+    /* Network panel for mobile */
+    .network-panel {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .qr-code {
+        max-width: 200px;
+    }
+    
+    /* Toast notifications for mobile */
+    .toast {
+        width: calc(100% - 30px);
+        left: 15px;
+        right: 15px;
+    }
+    
+    /* Context menu for mobile */
+    .context-menu {
+        min-width: 180px;
+    }
+}
+
+/* Tablet Portrait */
+@media (min-width: 481px) and (max-width: 768px) {
+    .sidebar {
+        width: 300px;
+    }
+    
+    .files-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .modal-content {
+        width: 85%;
+    }
+}
+
+/* Tablet Landscape */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .sidebar {
+        width: 320px;
+    }
+    
+    .main-content {
+        margin-left: 320px;
+    }
+    
+    .files-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger tap targets for touch devices */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .file-actions .btn {
+        min-height: 40px;
+        padding: 10px 15px;
+    }
+    
+    .nav-item {
+        padding: 15px 20px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .file-card:hover {
+        transform: none;
+    }
+    
+    .btn:hover {
+        transform: none;
+    }
+    
+    /* Add active states for touch feedback */
+    .btn:active {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+    
+    .file-card:active {
+        transform: scale(0.98);
+    }
+}
+
+/* High DPI screens (Retina displays) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Sharper borders and shadows */
+    .file-card,
+    .stat-card,
+    .btn {
+        border-width: 0.5px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .drop-area {
+        min-height: 150px;
+        padding: 20px 15px;
+    }
+    
+    .upload-queue {
+        max-height: 150px;
+    }
+    
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Accessibility - Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #0f172a;
+        --bg-secondary: #1e293b;
+        --bg-tertiary: #334155;
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar,
+    .header-actions,
+    .upload-section,
+    .particles {
+        display: none;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .file-card {
+        page-break-inside: avoid;
+    }
+}
+
+/* ============================================
+   MOBILE-SPECIFIC OPTIMIZATIONS
+   ============================================ */
+
+/* Mobile device class (added via JavaScript) */
+.mobile-device {
+    /* Prevent text selection on mobile for better UX */
+    -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+}
+
+.mobile-device .file-card,
+.mobile-device .btn {
+    /* Better touch feedback */
+    transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.mobile-device .file-card:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+
+.mobile-device .btn:active {
+    transform: scale(0.95);
+    opacity: 0.8;
+}
+
+/* Smooth scrolling on mobile */
+.mobile-device {
+    -webkit-overflow-scrolling: touch;
+}
+
+.mobile-device * {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* Fix for iOS Safari viewport height */
+    .main-content {
+        min-height: -webkit-fill-available;
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input,
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+    
+    /* Fix for iOS sticky positioning */
+    .header {
+        position: -webkit-sticky;
+        position: sticky;
+    }
+}
+
+/* Android Chrome specific */
+@media screen and (max-width: 768px) {
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+    
+    /* Better scrolling performance */
+    .files-grid,
+    .upload-queue {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+    }
+}
+
+/* PWA Support - Safe areas for notched devices */
+@supports (padding: env(safe-area-inset-top)) {
+    .header {
+        padding-top: calc(15px + env(safe-area-inset-top));
+    }
+    
+    .sidebar {
+        padding-top: calc(20px + env(safe-area-inset-top));
+    }
+    
+    .main-content {
+        padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    }
+}
+
+/* Mobile landscape mode optimizations */
+@media (max-height: 500px) and (orientation: landscape) {
+    .header {
+        padding: 10px 15px;
+    }
+    
+    .header h1 {
+        font-size: 16px;
+    }
+    
+    .stat-card {
+        padding: 10px;
+    }
+    
+    .sidebar-header {
+        padding: 15px;
+    }
+}
+
+/* Extra small devices (older phones) */
+@media (max-width: 360px) {
+    .btn {
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    
+    .file-card {
+        padding: 10px;
+    }
+    
+    .stat-value {
+        font-size: 20px;
+    }
+    
+    .header h1 {
+        font-size: 16px;
+    }
+}
+
+/* Touch-friendly spacing */
+.mobile-device .nav-item {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.mobile-device .btn {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.mobile-device .file-actions .btn {
+    padding: 10px 12px;
+}
+
+/* Better context menu positioning on mobile */
+@media (max-width: 768px) {
+    .context-menu {
+        position: fixed;
+        max-height: 60vh;
+        overflow-y: auto;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 40px);
+        max-width: 300px;
+    }
+}
+
+/* Improve modal UX on mobile */
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 12px;
+    }
+    
+    .modal-header {
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+        z-index: 10;
+    }
+    
+    .modal-footer {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg-secondary);
+        z-index: 10;
+    }
+}
+
+/* Upload progress optimizations for mobile */
+@media (max-width: 768px) {
+    .upload-queue {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-height: 40vh;
+        border-radius: 12px 12px 0 0;
+        z-index: 100;
+    }
+    
+    .upload-item {
+        font-size: 13px;
+    }
+    
+    .upload-speed {
+        font-size: 11px;
+    }
+}
+
+/* Sidebar overlay on mobile */
+@media (max-width: 768px) {
+    .sidebar.active::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+        animation: fadeIn 0.3s ease;
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

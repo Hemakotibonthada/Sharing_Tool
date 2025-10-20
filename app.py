@@ -1717,41 +1717,94 @@ def export_report():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def configure_firewall_if_windows(port):
+    """Attempt to configure Windows Firewall automatically"""
+    if platform.system() != 'Windows':
+        return
+    
+    try:
+        # Try to add firewall rule silently
+        subprocess.run([
+            'netsh', 'advfirewall', 'firewall', 'delete', 'rule',
+            'name=NetShare Pro'
+        ], capture_output=True, shell=True, check=False)
+        
+        result = subprocess.run([
+            'netsh', 'advfirewall', 'firewall', 'add', 'rule',
+            'name=NetShare Pro',
+            'dir=in',
+            'action=allow',
+            'protocol=TCP',
+            f'localport={port}',
+            'profile=private,public',
+            'description=NetShare Pro File Sharing Server'
+        ], capture_output=True, shell=True, check=False)
+        
+        if result.returncode == 0:
+            print("✅ Windows Firewall configured for network access")
+        else:
+            print("⚠️  Could not configure firewall automatically")
+            print("   For network access, run as Administrator or manually allow port", port)
+    except Exception:
+        pass  # Silently fail if we can't configure firewall
+
 if __name__ == '__main__':
     # Print startup information
     local_ip = get_local_ip()
     port = 5001
     
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("🚀 Circuvent Technologies - NetShare Pro v2.0")
     print("   Advanced File Sharing Server")
-    print("=" * 60)
-    print(f"\n📱 Access from this device: http://localhost:{port}")
-    print(f"🌐 Access from network: http://{local_ip}:{port}")
-    print(f"\n💡 Scan the QR code on the webpage to access from mobile devices")
-    print(f"\n📁 Files are stored in: {os.path.abspath(UPLOAD_FOLDER)}")
-    print(f"📦 File versions stored in: {os.path.abspath(VERSION_FOLDER)}")
+    print("=" * 70)
+    
+    # Try to configure firewall
+    configure_firewall_if_windows(port)
+    
+    print(f"\n� SERVER ADDRESSES:")
+    print(f"   • Local access:   http://localhost:{port}")
+    print(f"   • Network access: http://{local_ip}:{port}")
+    
+    print(f"\n� MOBILE/TABLET ACCESS:")
+    print(f"   1. Connect your mobile device to the same Wi-Fi network")
+    print(f"   2. Open browser and go to: http://{local_ip}:{port}")
+    print(f"   3. Or scan the QR code from the Network tab")
+    
+    print(f"\n📁 STORAGE:")
+    print(f"   • Uploads: {os.path.abspath(UPLOAD_FOLDER)}")
+    print(f"   • Versions: {os.path.abspath(VERSION_FOLDER)}")
     
     if ENABLE_AUTH:
-        print(f"\n🔐 Authentication: ENABLED")
+        print(f"\n🔐 AUTHENTICATION: Enabled")
         print(f"   Username: {AUTH_USERNAME}")
         print(f"   Password: {'*' * len(AUTH_PASSWORD)}")
     else:
-        print(f"\n🔓 Authentication: DISABLED (use trusted networks only)")
+        print(f"\n🔓 AUTHENTICATION: Disabled (use trusted networks only)")
     
     if BANDWIDTH_LIMIT:
-        print(f"\n⚡ Bandwidth limit: {format_speed(BANDWIDTH_LIMIT)}")
+        print(f"\n⚡ BANDWIDTH: {format_speed(BANDWIDTH_LIMIT)} limit")
     else:
-        print(f"\n⚡ Bandwidth limit: UNLIMITED")
+        print(f"\n⚡ BANDWIDTH: Unlimited")
     
     if ENABLE_SSL:
-        print(f"\n🔒 HTTPS: ENABLED")
+        print(f"\n🔒 HTTPS: Enabled")
         print(f"   Certificate: {SSL_CERT_FILE}")
         print(f"   Key: {SSL_KEY_FILE}")
     else:
-        print(f"\n🔓 HTTPS: DISABLED")
+        print(f"\n🔓 HTTPS: Disabled")
     
-    print("\n" + "=" * 60)
+    # Check if IP is localhost (not on network)
+    if local_ip.startswith('127.'):
+        print(f"\n⚠️  WARNING: Not connected to a network!")
+        print(f"   Connect to Wi-Fi or Ethernet for network access")
+    elif local_ip.startswith('169.254.'):
+        print(f"\n⚠️  WARNING: No DHCP - check network connection")
+    
+    print("\n" + "=" * 70)
+    print("🔄 Starting server...\n")
+    print("💡 Responsive UI: Works perfectly on mobile, tablet, and desktop!")
+    print("💡 Press Ctrl+C to stop the server\n")
+    print("=" * 70)
     print()
     
     # Run server with high-speed WebSocket support

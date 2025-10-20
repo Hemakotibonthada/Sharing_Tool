@@ -1943,6 +1943,113 @@ function formatTimestamp(timestamp) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 }
 
+/* ============================================
+   MOBILE & TOUCH ENHANCEMENTS
+   ============================================ */
+
+// Detect if device is mobile/tablet
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           (window.innerWidth <= 768);
+}
+
+// Enhanced touch support for mobile devices
+function initMobileEnhancements() {
+    if (!isMobileDevice()) return;
+    
+    console.log('📱 Mobile device detected - enabling touch optimizations');
+    
+    // Add mobile class to body
+    document.body.classList.add('mobile-device');
+    
+    // Optimize sidebar for mobile
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    // Close sidebar when clicking on main content (mobile)
+    if (mainContent && sidebar) {
+        mainContent.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('active') && window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+            }
+        });
+    }
+    
+    // Prevent zoom on double-tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
+    
+    // Long-press context menu for file cards
+    let pressTimer;
+    document.addEventListener('touchstart', (e) => {
+        const fileCard = e.target.closest('.file-card');
+        if (!fileCard) return;
+        
+        pressTimer = setTimeout(() => {
+            // Trigger context menu on long press
+            const rect = fileCard.getBoundingClientRect();
+            const contextEvent = new MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                clientX: rect.left + rect.width / 2,
+                clientY: rect.top + rect.height / 2
+            });
+            fileCard.dispatchEvent(contextEvent);
+            
+            // Haptic feedback if available
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+        }, 500);
+    });
+    
+    document.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+    });
+    
+    document.addEventListener('touchmove', () => {
+        clearTimeout(pressTimer);
+    });
+    
+    // Better file upload for mobile (enable camera)
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput && isMobileDevice()) {
+        // Allow camera/photo library access on mobile
+        fileInput.setAttribute('accept', 'image/*,video/*,application/*,*/*');
+    }
+    
+    console.log('✅ Mobile optimizations enabled');
+    console.log('  • Touch-optimized controls');
+    console.log('  • Long-press context menu');
+    console.log('  • Responsive layout active');
+}
+
+// Initialize mobile features
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileEnhancements);
+} else {
+    initMobileEnhancements();
+}
+
+// Re-check on window resize
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (isMobileDevice()) {
+            document.body.classList.add('mobile-device');
+        } else {
+            document.body.classList.remove('mobile-device');
+        }
+    }, 250);
+});
+
 // Export functions for use in other scripts
 window.handleFiles = handleFiles;
 window.uploadFile = uploadFile;
